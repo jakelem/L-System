@@ -13,16 +13,18 @@ class Mesh extends Drawable {
   scale: vec3;
   rotate: vec3;
   filepath: string;
+  m_color:vec4;
   mesh : any;
   objMtlLoader = new ObjMtlLoader();
 
     
-  constructor(filepath: string, center: vec3, scale:vec3 = vec3.fromValues(1,1,1), rotate:vec3 = vec3.fromValues(0,0,0)) {
+  constructor(filepath: string, center: vec3, scale:vec3 = vec3.fromValues(1,1,1), rotate:vec3 = vec3.fromValues(0,0,0), col:vec4 = vec4.fromValues(25,86,107,255)) {
     super(); // Call the constructor of the super class. This is required.
     this.center = vec4.fromValues(center[0], center[1], center[2], 1);
     this.filepath = filepath;
     this.scale = scale;
     this.rotate = rotate;
+    this.m_color = col;
   }
   
 
@@ -56,8 +58,7 @@ class Mesh extends Drawable {
       let pos = vec4.fromValues(mesh.vertices[i], mesh.vertices[i+1], mesh.vertices[i+2], 1);
       let nor = vec4.fromValues(mesh.vertexNormals[i], mesh.vertexNormals[i+1], mesh.vertexNormals[i+2], 0);
 
-      let col = col1;
-      vec4.lerp(col, col1, col2, pos[1] * 0.4);
+      let col = this.m_color;
       //console.log(pos[1]);
       let scaleMat = mat4.create();
       mat4.scale(scaleMat, scaleMat, this.scale);
@@ -97,7 +98,7 @@ class Mesh extends Drawable {
     //console.log("MESH NORMS NUM " + this.normals.length);
     //console.log("MESH INDICES NUM " + this.indices.length);
     //console.log("MESH positions " + this.indices);
-    console.log("MESH colors " + this.colors);
+    //console.log("MESH colors " + this.colors);
 
     this.generateIdx();
     this.generatePos();

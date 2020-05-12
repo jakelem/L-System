@@ -2,6 +2,7 @@ import {vec3, vec4, mat4} from 'gl-matrix';
 import Drawable from '../rendering/gl/Drawable';
 import {gl} from '../globals';
 import Mesh from './Mesh';
+import LSystem from './LSystem';
 class Turtle {
   position: vec3;
   orientation: vec3;
@@ -22,27 +23,11 @@ class Turtle {
 }
 
 
-class LSystem  {
-  axiom : string;
-  currTurtle : Turtle;
-  buffer: ArrayBuffer;
-  indices: Uint32Array;
-  positions: Float32Array;
-  normals: Float32Array;
-  iterations :number;
-  center: vec4;
+class Orchids extends LSystem  {
 
-  turtleStack : Array<Turtle>;
-
-  meshes : Array<Mesh>;
-
-  charExpansions : Map<string, string>;
-  charToAction : Map<string, ()=> any>;
-  expandedSentence : string;
-
-  orientRand : number;
   constructor() {
-    this.axiom = "X";
+    super();
+    this.axiom = "YX";
     this.turtleStack = new Array<Turtle>();
     this.meshes = new Array<Mesh>();
     this.iterations = 3;
@@ -51,7 +36,9 @@ class LSystem  {
     this.expandedSentence = "";
     this.currTurtle = new Turtle();
     this.currTurtle.orientation = vec3.fromValues(0,1,0);
-    this.orientRand = 0;
+
+    this.charExpansions.clear();
+;   this.charToAction.clear();
     this.fillCharExpansions();
     this.fillCharToAction();
 
@@ -63,12 +50,34 @@ class LSystem  {
     });
 
     this.charToAction.set('>', () => {
-      this.rotateTurtleX();
+      this.rotateTurtleXBy(10);
+    });
+
+    this.charToAction.set('<', () => {
+      this.rotateTurtleXBy(-10);
     });
 
 
+
+
     this.charToAction.set('.', () => {
-      this.rotateTurtleZ();
+      this.rotateTurtleZBy(10);
+    });
+
+    this.charToAction.set('-', () => {
+      this.rotateTurtleZBy(-10);
+    });
+    this.charToAction.set('+', () => {
+      this.rotateTurtleZBy(10);
+    });
+
+
+    this.charToAction.set('y', () => {
+      this.rotateTurtleYBy(-10);
+    });
+
+    this.charToAction.set('u', () => {
+      this.rotateTurtleYBy(10);
     });
 
 
@@ -80,10 +89,20 @@ class LSystem  {
     this.charToAction.set(']', () => {
       this.popTurtle();
     });
+
+    this.charToAction.set('s', () => {
+      this.sproutBud();
+    });
+
+    this.charToAction.set('l', () => {
+      this.sproutLeaf();
+    });
   }
 
   advanceTurtle() {
-    let mesh = new Mesh('/geo/feather.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation))
+    console.log("advancingturtle");
+    let mesh = new Mesh('/geo/stem.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), 
+    vec3.clone(this.currTurtle.orientation), vec4.fromValues(0.29,0.17,0.11,1))
     this.meshes.push(mesh);
 
     let rotMat = mat4.create();
@@ -99,20 +118,26 @@ class LSystem  {
 
   }
 
+  sproutBud() {
+    let mesh = new Mesh('/geo/orchid.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation),
+    vec4.fromValues(1,1,1,1))
+    this.meshes.push(mesh);
+
+  }
+
+  sproutLeaf() {
+    let mesh = new Mesh('/geo/leaf.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation),
+    vec4.fromValues(0.38,0.51,0.33,1))
+    this.meshes.push(mesh);
+
+  }
+
   rotateTurtleX() {
     this.currTurtle.orientation[0] += 30;
   }
 
 
 
-  rotateTurtleXBy(angle:number) {
-    this.currTurtle.orientation[0] += angle + Math.random() * this.orientRand - 0.5 * this.orientRand;
-  }
-
-
-  rotateTurtleYBy(angle:number) {
-    this.currTurtle.orientation[1] += angle +  Math.random() * this.orientRand - 0.5 * this.orientRand;
-  }
   rotateTurtleY() {
     this.currTurtle.orientation[1] += 30;
   }
@@ -121,20 +146,18 @@ class LSystem  {
     this.currTurtle.orientation[2] += 30;
   }
 
-  rotateTurtleZBy(angle:number) {
-    this.currTurtle.orientation[2] += angle +  Math.random() * this.orientRand - 0.5 * this.orientRand;
-  }
+
+
+  fillCharExpansions() {
+    console.log("orchids EXPANSION");
+    this.charExpansions.set('X', 'uuuuF-F++++.[X>[F-+F-uuys]]--<[+F---yF-<-F>++us]');
+    this.charExpansions.set('Y', '[lyyyyyylyyy>>>ylY]');
 
   
-  fillCharExpansions() {
-    console.log("regular EXPANSION");
-
-    this.charExpansions.set('X', 'X.>>[X[.F].>F.F[XF]FX]');
   }
 
   pushTurtle() {
     this.turtleStack.push(this.currTurtle);
-
     let prevTurtle = this.currTurtle;
     this.currTurtle = new Turtle();
     this.currTurtle.copyshallow(prevTurtle);
@@ -163,6 +186,7 @@ class LSystem  {
       prevAxiom = sentence;
 
     }
+
     this.expandedSentence = prevAxiom;
   }
 
@@ -185,4 +209,4 @@ class LSystem  {
 
 };
 
-export default LSystem;
+export default Orchids;

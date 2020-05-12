@@ -9,23 +9,36 @@ import {setGL} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import Mesh from './geometry/Mesh';
 import LSystem from './geometry/LSystem';
+import Orchids from './geometry/Orchids';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   tesselations: 5,
+  iterations: 3,
+  'Rotational Noise': 0,
   'Load Scene': loadScene, // A function pointer, essentially
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let m_mesh: Mesh;
-let l_system: LSystem;
+let l_system: Orchids;
+
+let orchid : Orchids;
 function loadObjs() {
+}
+
+function changeIterations(i : number) {
+  l_system = new Orchids();
+  l_system.iterations = i;
+
 }
 
 
 function loadScene() {
-  l_system = new LSystem();
+  l_system = new Orchids();
+  l_system.iterations = controls.iterations;
+  l_system.orientRand = controls["Rotational Noise"];
   l_system.expandAxiom();
   l_system.moveTurtle();
   l_system.createAll();
@@ -53,6 +66,9 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
+  gui.add(controls, 'iterations', 1, 8).step(1);
+  gui.add(controls, 'Rotational Noise', 0, 360).step(15);
+
   gui.add(controls, 'Load Scene');
 
   // get canvas and webgl context
@@ -71,7 +87,7 @@ function main() {
   const camera = new Camera(vec3.fromValues(0, 0, 5), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
-  renderer.setClearColor(0.2, 0.2, 0.2, 1);
+  renderer.setClearColor(225/255, 240/255, 246/255, 1);
   gl.enable(gl.DEPTH_TEST);
 
   const lambert = new ShaderProgram([
