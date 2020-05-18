@@ -14,8 +14,14 @@ import Orchids from './geometry/Orchids';
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   tesselations: 5,
-  iterations: 3,
-  'Rotational Noise': 0,
+  iterations: 4,
+  'Radius': 0.3,
+  'Height': 0.3,
+  'Rotational Noise': 20,
+  'Length Decay': 0.3,
+  'Radial Decay': 1.6,
+  'Angle': 5,
+  'Offset': -0.01,
   'Load Scene': loadScene, // A function pointer, essentially
 };
 
@@ -38,7 +44,14 @@ function changeIterations(i : number) {
 function loadScene() {
   l_system = new Orchids();
   l_system.iterations = controls.iterations;
+  l_system.radius = controls["Radius"];
   l_system.orientRand = controls["Rotational Noise"];
+  l_system.decay = controls["Radial Decay"] * 0.1;
+  l_system.stepDecay = controls["Length Decay"] * 0.1;
+  l_system.offset = controls["Offset"] * 0.1;
+  l_system.curvature = controls["Angle"];
+  l_system.height = controls["Height"];
+
   l_system.expandAxiom();
   l_system.moveTurtle();
   l_system.createAll();
@@ -67,8 +80,13 @@ function main() {
   const gui = new DAT.GUI();
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.add(controls, 'iterations', 1, 8).step(1);
-  gui.add(controls, 'Rotational Noise', 0, 360).step(15);
-
+  gui.add(controls, 'Rotational Noise', 0, 40).step(1);
+  gui.add(controls, 'Radial Decay', -1, 3).step(0.01);
+  gui.add(controls, 'Length Decay', -0.2, 2).step(0.01);
+  gui.add(controls, 'Angle', 0, 20).step(0.01);
+  gui.add(controls, 'Radius', 0.1, 4).step(0.01);
+  gui.add(controls, 'Height', 0.1, 4).step(0.01);
+  //gui.add(controls, 'Offset', -10, 10).step(0.01);
   gui.add(controls, 'Load Scene');
 
   // get canvas and webgl context

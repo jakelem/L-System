@@ -11,7 +11,7 @@ class Turtle {
   constructor() {
     this.position = vec3.fromValues(0,0,0);
     this.orientation = vec3.fromValues(0,0,0);
-    this.depth = 2;
+    this.depth = 1;
 
   }
 
@@ -25,9 +25,11 @@ class Turtle {
 
 class Orchids extends LSystem  {
 
+  orchidSize : number;
+
   constructor() {
     super();
-    this.axiom = "YX";
+    this.axiom = "X";
     this.turtleStack = new Array<Turtle>();
     this.meshes = new Array<Mesh>();
     this.iterations = 3;
@@ -36,6 +38,11 @@ class Orchids extends LSystem  {
     this.expandedSentence = "";
     this.currTurtle = new Turtle();
     this.currTurtle.orientation = vec3.fromValues(0,1,0);
+    this.decay = 0.2;
+    this.stepDecay = 0.1;
+    this.orchidSize = 0.3;
+    this.radius = 0.2;
+    this.offset = -0.01;
 
     this.charExpansions.clear();
 ;   this.charToAction.clear();
@@ -49,26 +56,34 @@ class Orchids extends LSystem  {
       this.advanceTurtle();
     });
 
+    this.charToAction.set('A', () => {
+      this.advanceTurtle();
+    });
+
+    this.charToAction.set('B', () => {
+      this.advanceTurtle();
+    });
+
     this.charToAction.set('>', () => {
-      this.rotateTurtleXBy(10);
+      this.rotateTurtleXBy(this.curvature);
     });
 
     this.charToAction.set('<', () => {
-      this.rotateTurtleXBy(-10);
+      this.rotateTurtleXBy(-this.curvature);
     });
 
 
 
 
     this.charToAction.set('.', () => {
-      this.rotateTurtleZBy(10);
+      this.rotateTurtleZBy(this.curvature);
     });
 
     this.charToAction.set('-', () => {
-      this.rotateTurtleZBy(-10);
+      this.rotateTurtleZBy(-this.curvature);
     });
     this.charToAction.set('+', () => {
-      this.rotateTurtleZBy(10);
+      this.rotateTurtleZBy(this.curvature);
     });
 
 
@@ -96,12 +111,15 @@ class Orchids extends LSystem  {
 
     this.charToAction.set('l', () => {
       this.sproutLeaf();
-    });
+    });0
   }
 
   advanceTurtle() {
     console.log("advancingturtle");
-    let mesh = new Mesh('/geo/stem.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), 
+    let sF = Math.exp(-this.currTurtle.depth * this.decay) * this.radius;
+    let sStep = Math.exp(-this.currTurtle.depth * this.stepDecay) * this.height;
+
+    let mesh = new Mesh('/geo/stem.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(sF,sStep,sF), 
     vec3.clone(this.currTurtle.orientation), vec4.fromValues(0.29,0.17,0.11,1))
     this.meshes.push(mesh);
 
@@ -110,23 +128,26 @@ class Orchids extends LSystem  {
     mat4.rotateY(rotMat, rotMat, this.currTurtle.orientation[1] * Math.PI / 180)
     mat4.rotateZ(rotMat, rotMat, this.currTurtle.orientation[2] * Math.PI / 180)
 
-    let step = vec3.fromValues(0,1,0);
+    let offset = this.height / 20;
+    let step = vec3.fromValues(0,sStep  - offset,0);
     vec3.transformMat4(step, step, rotMat);
-
+    this.currTurtle.depth += 1;
     //vec3.scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, this.currTurtle.depth);
     vec3.scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
 
   }
 
   sproutBud() {
-    let mesh = new Mesh('/geo/orchid.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation),
+    let mesh = new Mesh('/geo/orchid.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(this.orchidSize, this.orchidSize, this.orchidSize), vec3.clone(this.currTurtle.orientation),
     vec4.fromValues(1,1,1,1))
     this.meshes.push(mesh);
 
   }
 
   sproutLeaf() {
-    let mesh = new Mesh('/geo/leaf.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation),
+    let sF = Math.exp(-this.currTurtle.depth);
+
+    let mesh = new Mesh('/geo/leaf.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(sF,1,sF), vec3.clone(this.currTurtle.orientation),
     vec4.fromValues(0.38,0.51,0.33,1))
     this.meshes.push(mesh);
 
@@ -150,8 +171,17 @@ class Orchids extends LSystem  {
 
   fillCharExpansions() {
     console.log("orchids EXPANSION");
-    this.charExpansions.set('X', 'uuuuF-F++++.[X>[F-+F-uuys]]--<[+F---yF-<-F>++us]');
-    this.charExpansions.set('Y', '[lyyyyyylyyy>>>ylY]');
+    this.charExpansions.set('X', 'A+B>F-A<B+F-[>>>>>>Xs][++++++<<<<<<Xs][------<<<<<<Xs]');
+    
+    this.charExpansions.set('F', '+A<');
+    this.charExpansions.set('A', '-B>');
+    this.charExpansions.set('B', '>+F<-');
+    this.charExpansions.set('s', 'Fs');
+
+    //this.charExpansions.set('+', '+F');
+    //this.charExpansions.set('-', '-F');
+
+    this.charExpansions.set('Y', '[yylyyyylyyy>>>ylY]');
 
   
   }

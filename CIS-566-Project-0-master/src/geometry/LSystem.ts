@@ -31,6 +31,13 @@ class LSystem  {
   normals: Float32Array;
   iterations :number;
   center: vec4;
+  decay : number;
+  stepDecay : number;
+  radius : number;
+  height : number;
+  offset : number;
+  curvature : number;
+
 
   turtleStack : Array<Turtle>;
 
@@ -54,6 +61,8 @@ class LSystem  {
     this.orientRand = 0;
     this.fillCharExpansions();
     this.fillCharToAction();
+    this.curvature = 5;
+    this.height = 0.2;
 
   }
 
