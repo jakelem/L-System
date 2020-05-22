@@ -1,5 +1,5 @@
 {
-  "homepage": "http://jakelem.github.io/ProceduralsProjects",
+  "homepage": "http://jakelem.github.io/L-System",
   "scripts": {
     "start": "webpack-dev-server --hot --inline",
     "build": "webpack",
