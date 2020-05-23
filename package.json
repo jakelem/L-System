@@ -1,9 +1,7 @@
 {
-  "homepage": "http://jakelem.github.io/L-System",
   "scripts": {
     "start": "webpack-dev-server --hot --inline",
-    "build": "webpack",
-    "deploy": "gh-pages -d build"
+    "build": "webpack"
   },
   "devDependencies": {
     "@types/dat-gui": "^0.6.3",
