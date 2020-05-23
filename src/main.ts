@@ -78,7 +78,7 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
-  gui.add(controls, 'tesselations', 0, 8).step(1);
+  //gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.add(controls, 'iterations', 1, 8).step(1);
   gui.add(controls, 'Rotational Noise', 0, 40).step(1);
   gui.add(controls, 'Radial Decay', -1, 3).step(0.01);
