@@ -20,6 +20,46 @@ in vec4 fs_LightVec;
 in vec4 fs_Col;
 in vec4 fs_Pos;
 
+uniform float u_Time;
+
+const vec3 bluegreen[5] = vec3[](
+vec3(254, 186, 98) / 255.0,
+vec3(255, 182, 192) / 255.0,
+vec3(177, 187, 187) / 255.0,
+vec3(195, 232, 213) / 255.0,
+vec3(142, 199, 230) / 255.0);
+
+const vec3 sunset[5] = vec3[](
+    vec3(115, 120, 176) / 255.0, 
+    vec3(142, 120, 184) / 255.0, 
+
+vec3(142, 120, 184) / 255.0,
+vec3(252, 144, 168) / 255.0,
+vec3(255, 182, 192) / 255.0
+);
+
+const float cutoffs[5] = float[](0.15,0.3,0.4,0.65,0.75);
+
+vec3 uvToSunset(vec2 uv) {
+    if(uv.y < cutoffs[0]) {
+        return sunset[0];
+    }
+    else if(uv.y < cutoffs[1]) {
+        return mix(sunset[0], sunset[1], (uv.y - cutoffs[0]) / (cutoffs[1] - cutoffs[0]));
+    }
+    else if(uv.y < cutoffs[2]) {
+        return mix(sunset[1], sunset[2], (uv.y - cutoffs[1]) / (cutoffs[2] - cutoffs[1]));
+    }
+    else if(uv.y < cutoffs[3]) {
+        return mix(sunset[2], sunset[3], (uv.y - cutoffs[2]) / (cutoffs[3] - cutoffs[2]));
+    }
+    else if(uv.y < cutoffs[4]) {
+        return mix(sunset[3], sunset[4], (uv.y - cutoffs[3]) / (cutoffs[4] - cutoffs[3]));
+    }
+    return sunset[4];
+}
+
+
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
@@ -27,8 +67,9 @@ void main()
 {
     // Material base color (before shading)
         vec4 diffuseColor = fs_Col;
-        
          //diffuseColor = vec4(0.1,1,1,1);
+        vec2 uv = 0.5 * (fs_Pos.xy + vec2(1,1));
+
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
         // Avoid negative lighting values
@@ -39,11 +80,9 @@ void main()
         float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
                                                             //to simulate ambient lighting. This ensures that faces that are not
 //                                                            //lit by our point light are not completely black.
-//        if(lightIntensity == 0f) {
-//            lightIntensity = 0.2f;
-//        }
+
         // Compute final shaded color
-        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
-        //out_Col = vec4(fs_Pos.z,fs_Pos.z,fs_Pos.z,1);
+       // out_Col = vec4(0,0.8,0.5,1);
+       out_Col = vec4(uvToSunset(uv),1);
 	//out_Col = diffuseColor;
 }

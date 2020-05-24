@@ -6,6 +6,7 @@
 //If it were run on your CPU, each vertex would have to be processed in a FOR loop, one at a time.
 //This simultaneous transformation allows your program to run much faster, especially when rendering
 //geometry with millions of vertices.
+uniform float u_Time;
 
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering. In this assignment,
@@ -31,6 +32,7 @@ out vec4 fs_Col;            // The color of each vertex. This is implicitly pass
 out vec4 fs_Pos;
 const vec4 lightPos = vec4(-4, 5, 5, 1); //The position of our virtual light, which is used to compute the shading of
                                         //the geometry in the fragment shader.
+                                        
 
 void main()
 {
@@ -42,17 +44,15 @@ void main()
                                                             // model matrix. This is necessary to ensure the normals remain
                                                             // perpendicular to the surface after the surface is transformed by
                                                             // the model matrix.
-                                                
 
-                                                          
+
     vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
-    
-   // modelposition.z = -0.1;
 
     fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
     
-    fs_Pos = u_ViewProj * modelposition;
-    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
+    modelposition.z = 0.9999999;
+    vec4 offset =  vec4(0,-mod(u_Time, 100000.f),0,0) * 0.01;
+    fs_Pos = modelposition;
+    gl_Position = modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices
-                                             
 }

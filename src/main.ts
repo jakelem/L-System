@@ -1,4 +1,4 @@
-import {vec3, vec4} from 'gl-matrix';
+import {vec3, vec4, mat4, mat3} from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Icosphere from './geometry/Icosphere';
@@ -29,6 +29,7 @@ let icosphere: Icosphere;
 let square: Square;
 let m_mesh: Mesh;
 let l_system: Orchids;
+let background_meshes : Array<Mesh>;
 
 let orchid : Orchids;
 function loadObjs() {
@@ -41,7 +42,31 @@ function changeIterations(i : number) {
 }
 
 
+let xSubs = 5;
+let ySubs = 3;
+let zSubs = 3;
+
 function loadScene() {
+  background_meshes = new Array<Mesh>();
+
+  for(let x = 0; x < xSubs; x++) {
+    for(let y = 0; y < ySubs; y++) {
+      for(let z = 0; z < zSubs; z++) {
+      let mesh = new Mesh('/geo/orchid.obj', vec3.fromValues(0,0,0), vec3.fromValues(0.3,0.3,0.3), 
+      vec3.fromValues(0,0,0), vec4.fromValues(1,1,1,1))
+      let randX = (x + Math.random()) * 2;
+      let randY = (y + Math.random()) * 2;
+      let randZ = (z + Math.random() - zSubs / 2) * 2;
+      mesh.m_pos = vec3.fromValues(-randX,randY,randZ);
+      mesh.m_vel = vec3.fromValues(1.5,0,0);
+      mesh.m_angle = Math.random() * 180;
+
+      background_meshes.push(mesh);
+      mesh.load();
+    }
+  }
+}
+
   l_system = new Orchids();
   l_system.iterations = controls.iterations;
   l_system.radius = controls["Radius"];
@@ -55,7 +80,7 @@ function loadScene() {
   l_system.expandAxiom();
   l_system.moveTurtle();
   l_system.createAll();
-  console.log("SETNECE " + l_system.expandedSentence);
+  //console.log("SETNECE " + l_system.expandedSentence);
 
   icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
   //icosphere.create();
@@ -64,7 +89,7 @@ function loadScene() {
   //m_mesh.center = vec4.fromValues(0, 1, 2, 1);
   square = new Square(vec3.fromValues(0, 0, 0));
 
-  //square.create();
+  square.create();
 }
 
 function main() {
@@ -119,24 +144,85 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/planet-frag.glsl')),
   ]);
 
+  const background = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/static-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/static-frag.glsl')),
+  ]);
+
+  let time = 0.0;
   // This function will be called every frame
   function tick() {
+
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
+    renderer.render(camera, background, [
+      square,
+    ]);
     renderer.render(camera, lambert, [
       //icosphere,
       m_mesh,
-      square,
     ]);
+
+    time += 1;
+    background.setTime(time);
+
+
 
     for(let mesh of l_system.meshes) {
       renderer.render(camera, planet, [
         mesh,
       ]
     );}
+
+
+    let ts = 0.01;
+
+
+
+    for(let x = 0; x < xSubs; x++) {
+      for(let y = 0; y < ySubs; y++) {
+        for(let z = 0; z < zSubs; z++) {
+          let i = x * ySubs * zSubs + y * zSubs + z;
+         // console.log(i);
+
+          let mesh = background_meshes[i];
+          let dx = vec3.create();
+          let dx2 = vec3.fromValues(0,-1 * ts,0);
     
+          vec3.scale(dx, mesh.m_vel, ts);
+    
+          vec3.add(mesh.m_pos, mesh.m_pos, dx);
+          vec3.add(mesh.m_vel, mesh.m_vel, dx2);
+          let r = mat4.create();
+          r = mat4.identity(r);
+    
+          //console.log(mesh.m_pos);
+         // mesh.m_vel = vec3.fromValues(0,0,0);
+          //console.log(mesh.m_vel);
+          if(mesh.m_pos[1] < -2.0) {
+            let randX = (x + Math.random()) * 2;
+            let randY = (y + Math.random()) * 2;
+            let randZ = (z + Math.random() - zSubs / 2) * 2;
+            mesh.m_pos = vec3.fromValues(-randX,randY,randZ);
+            mesh.m_vel = vec3.fromValues(2,0,0);
+           // console.log(mesh.m_pos); 
+          }
+          let model = mat4.create();
+          mat4.identity(model);
+          mat4.translate(model, model, mesh.m_pos);
+          mesh.m_angle += 0.001;
+          mat4.rotateY(model, model, mesh.m_angle * 180 / Math.PI);
+         // console.log(model);
+    
+          renderer.render(camera, planet, [
+            mesh,
+          ],model
+        );
+      }
+    }
+  }
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

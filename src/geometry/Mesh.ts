@@ -16,6 +16,9 @@ class Mesh extends Drawable {
   m_color:vec4;
   mesh : any;
   objMtlLoader = new ObjMtlLoader();
+  m_pos:vec3;
+  m_vel:vec3;
+  m_angle:number;
 
     
   constructor(filepath: string, center: vec3, scale:vec3 = vec3.fromValues(1,1,1), rotate:vec3 = vec3.fromValues(0,0,0), col:vec4 = vec4.fromValues(25,86,107,255)) {
@@ -27,15 +30,13 @@ class Mesh extends Drawable {
     this.m_color = col;
   }
   
-
-
   load() {
     let f = (meshes: any) => {
       this.loadMesh(meshes.mesh);
-      console.log()
+      //console.log()
       this.create();
     }
-    console.log("FILEPATH " + this.filepath);
+    //console.log("FILEPATH " + this.filepath);
     OBJ.downloadMeshes({
       'mesh': this.filepath,
     }, f);
@@ -47,7 +48,7 @@ class Mesh extends Drawable {
     this.normals = new Float32Array(numPos);
     this.colors = new Float32Array(numPos);
 
-    console.log(numPos);
+    //console.log(numPos);
     let v = 0;
     let col1 = vec4.fromValues(25,86,107,255);
     vec4.scale(col1,col1,1/255);
