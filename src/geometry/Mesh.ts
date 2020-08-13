@@ -1,4 +1,4 @@
-import {vec3, vec4, mat4} from 'gl-matrix';
+import {vec2, vec3, vec4, mat4} from 'gl-matrix';
 import Drawable from '../rendering/gl/Drawable';
 import {gl} from '../globals';
 
@@ -8,26 +8,32 @@ var fs = require('fs') ;
 
 
 class Mesh extends Drawable {
+  static count : number = 0;
   indices: Array<number>;
   positions: Array<number>;
   colors: Array<number>;
   normals: Array<number>;
+  uvs : Array<number>;
   center: vec4;
   scale: vec3;
-  rotate: vec3;
-  filepath: string;
-  m_color:vec4;
-  mesh : any;
-  objMtlLoader = new ObjMtlLoader();
-
-
+  debug:boolean
+  //represents the cell in the grid texture that applies to this mesh
+  uv_cell : number;
+  uv_scale : number;
+  tex_divs : number;
   m_pos:vec3;
   m_vel:vec3;
   m_angle:number;
   m_size : vec3;
 
+  rotate: vec3;
+  filepath: string;
+  m_color:vec4;
+  mesh : any;
+  objMtlLoader = new ObjMtlLoader();
   enabled : boolean;
   transform : mat4;
+
   maxIdx : number;
     
   constructor(filepath: string, center: vec3 = vec3.fromValues(0,0,0), 
@@ -42,12 +48,14 @@ class Mesh extends Drawable {
     this.normals = new Array<number>();
     this.colors = new Array<number>();
     this.indices = new Array<number>();
+    this.uvs = new Array<number>();
+    this.uv_cell = 0;
+    this.tex_divs = 10;
+    this.uv_scale = 1.0 / this.tex_divs;
+    this.debug = false
     this.enabled = true;
     this.maxIdx = -1;
-
-    this.m_size = vec3.fromValues(1,1,1);
     this.getOverallTransformation();
-
   }
   
   getOverallTransformation() {
@@ -60,7 +68,6 @@ class Mesh extends Drawable {
 
   }
 
-
   getModelMatrix() {
     let model = mat4.create();
     mat4.identity(model);
@@ -69,6 +76,17 @@ class Mesh extends Drawable {
     mat4.scale(model, model, this.m_size);
 
     return model;
+  }
+  transformUV(uvx : number, uvy : number) {
+
+    uvx *= this.uv_scale;
+    uvy *= this.uv_scale;
+
+    let cel_y = this.uv_scale * Math.floor(this.uv_cell / this.tex_divs);
+    let cel_x = this.uv_scale * (this.uv_cell % this.tex_divs);
+    
+    let nextcel_y = this.uv_scale * Math.floor(this.uv_cell / this.tex_divs + 1);
+    return vec2.fromValues(uvx + cel_x, Math.min(uvy + cel_y,nextcel_y - 0.007));
   }
 
 
@@ -79,6 +97,10 @@ class Mesh extends Drawable {
       output += 'v ' + this.positions[i] + ' ' + this.positions[i + 1] + ' ' + this.positions[i + 2] + '\n';
     }
 
+    for(let i = 0 ; i < this.normals.length; i += 2) {
+      output += 'vt ' + this.uvs[i] + ' ' + (1.0-this.uvs[i + 1]) + '\n';
+    }
+
     for(let i = 0 ; i < this.normals.length; i += 4) {
       output += 'vn ' + this.normals[i] + ' ' + this.normals[i + 1] + ' ' + this.normals[i + 2] + '\n';
     }
@@ -86,12 +108,13 @@ class Mesh extends Drawable {
     for(let i = 0 ; i < this.indices.length; i += 3) {
       output += 'f';
       for(let j = 0; j < 3; j ++) {
-        output += ' ' + (this.indices[i + j] + 1) + '//' + (this.indices[i + j] + 1);
+        output += ' ' + (this.indices[i + j] + 1) + '/' + (this.indices[i + j] + 1) + '/' + (this.indices[i + j] + 1);
       }
       output += '\n';
 
     }
 
+    console.log(output);
     return output;
   }
 
@@ -114,45 +137,38 @@ class Mesh extends Drawable {
     });
   }
 
-  appendUntransformed(mesh: Mesh) {
-    for(let i = 0; i < mesh.positions.length; i += 1) {
-      this.positions.push(mesh.positions[i]);
-      this.normals.push(mesh.normals[i]);
-      this.colors.push(mesh.colors[i]);
-
-    }
-
-    let initIdx = this.maxIdx + 1;
-    for(let i = 0; i < mesh.indices.length; i += 1) {
-      let idx = mesh.indices[i] + initIdx;
-      this.indices.push(idx);
-      this.maxIdx = Math.max(idx, this.maxIdx);
-    }
-  }
-
-  transformAndAppend(mesh: Mesh, trans : mat4, col : vec4 = vec4.fromValues(0.5,0.5,0.5, 1)) {
+  transformAndAppend(prefab: Mesh, transformed : Mesh) {
     //console.log(numPos);
     let v = 0;
-    for(let i = 0; i < mesh.positions.length; i += 4) {
-      let pos = vec4.fromValues(mesh.positions[i], mesh.positions[i+1], mesh.positions[i+2], mesh.positions[i+3]);
-      let nor = vec4.fromValues(mesh.normals[i], mesh.normals[i+1], mesh.normals[i+2],  mesh.normals[i+3]);
-      vec4.transformMat4(pos, pos, trans);
-      vec4.transformMat4(nor, nor, trans);
+    for(let i = 0; i < prefab.positions.length; i += 4) {
+      let pos = vec4.fromValues(prefab.positions[i], prefab.positions[i+1], prefab.positions[i+2], prefab.positions[i+3]);
+      let nor = vec4.fromValues(prefab.normals[i], prefab.normals[i+1], prefab.normals[i+2],  prefab.normals[i+3]);
+
+      vec4.transformMat4(pos, pos, transformed.transform);
+      vec4.transformMat4(nor, nor, transformed.transform);
       vec4.normalize(nor, nor);
       
       for(let j = 0; j < 4; j+=1) { 
         this.positions.push(pos[j]);
         this.normals.push(nor[j]);
-        this.colors.push(col[j]);
+        this.colors.push(transformed.m_color[j]);
 
       }
       v += 4;
     }
+    for(let i = 0; i < prefab.uvs.length - 1; i += 2) {
+     // mesh.uv_cell = 2;
+      let v2 = transformed.transformUV(prefab.uvs[i], prefab.uvs[i+1]);
+      //console.log("v2 " + v2)
+
+      this.uvs.push(v2[0]);
+      this.uvs.push(v2[1]);
+    }
 
     //this.indices = new Array<number>(mesh.indices.length);
     let initIdx = this.maxIdx + 1;
-    for(let i = 0; i < mesh.indices.length; i += 1) {
-      let idx = mesh.indices[i] + initIdx;
+    for(let i = 0; i < prefab.indices.length; i += 1) {
+      let idx = prefab.indices[i] + initIdx;
       this.indices.push(idx);
       this.maxIdx = Math.max(idx, this.maxIdx);
     }
@@ -160,13 +176,13 @@ class Mesh extends Drawable {
 
   //parents this mesh's transformation to the input mesh's
   addPrefabMeshAsChild(mesh: Mesh) {
-    this.transformAndAppend(mesh, this.transform);
+    this.transformAndAppend(mesh, this);
   }
 
 
   //preserves the transformation of the input mesh
   addPrefabMesh(mesh: Mesh) {
-    this.transformAndAppend(mesh, mesh.transform);
+    this.transformAndAppend(mesh, mesh);
   }
 
 
@@ -180,7 +196,6 @@ class Mesh extends Drawable {
 
 
   loadMesh(mesh: any) {
-    //console.log(mesh)
     let numPos = mesh.vertices.length / 3 * 4;
     this.positions = new Array<number>(numPos);
     this.normals = new Array<number>(numPos);
@@ -195,15 +210,33 @@ class Mesh extends Drawable {
     for(let i = 0; i < mesh.vertices.length; i += 3) {
       let pos = vec4.fromValues(mesh.vertices[i], mesh.vertices[i+1], mesh.vertices[i+2], 1);
       let nor = vec4.fromValues(mesh.vertexNormals[i], mesh.vertexNormals[i+1], mesh.vertexNormals[i+2], 0);
-      let col = this.m_color;
+      let col = vec4.fromValues(mesh.textures[i], mesh.textures[i+1], mesh.vertexNormals[i+2], 0);
 
       for(let j = 0; j < 4; j+=1) { 
         this.positions[v+j] = pos[j];
         this.normals[v+j] = nor[j];
         this.colors[v+j] = col[j];
+
       }
+
       v += 4;
     }
+
+    v = 0;
+
+    this.uvs = new Array<number>();
+   // console.log("VERT LENGTH " + mesh.vertices.length);
+    //console.log("TEX LENGTH " +  mesh.textures.length);
+
+    for(let i = 0; i < mesh.textures.length ; i += 1) {
+      //let transuv = this.transformUV(mesh.textures[i], mesh.textures[i+1]);
+      //this.uvs.push(transuv[0]);
+      //this.uvs.push(transuv[1]);
+     // console.log("pushed to uvs" + mesh.textures[i])
+      this.uvs.push(mesh.textures[i]);
+
+    }
+
 
     this.indices = new Array<number>(mesh.indices.length);
 
@@ -212,6 +245,24 @@ class Mesh extends Drawable {
     }
 
   }
+
+  appendUntransformed(mesh: Mesh) {
+    for(let i = 0; i < mesh.positions.length; i += 1) {
+      this.positions.push(mesh.positions[i]);
+      this.normals.push(mesh.normals[i]);
+      this.colors.push(mesh.colors[i]);
+      this.uvs.push(mesh.uvs[i]);
+
+    }
+
+    let initIdx = this.maxIdx + 1;
+    for(let i = 0; i < mesh.indices.length; i += 1) {
+      let idx = mesh.indices[i] + initIdx;
+      this.indices.push(idx);
+      this.maxIdx = Math.max(idx, this.maxIdx);
+    }
+  }
+
 
   create() {
     if(this.enabled) {
@@ -226,12 +277,15 @@ class Mesh extends Drawable {
     let norm : Float32Array = Float32Array.from(this.normals);
     let pos : Float32Array = Float32Array.from(this.positions);
     let col : Float32Array = Float32Array.from(this.colors);
+    let uv : Float32Array = Float32Array.from(this.uvs);
+
     let idx : Uint32Array = Uint32Array.from(this.indices);
 
     this.generateIdx();
     this.generatePos();
     this.generateNor();
     this.generateCol();
+    this.generateUV();
 
     this.count = this.indices.length;
 
@@ -247,9 +301,9 @@ class Mesh extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufCol);
     gl.bufferData(gl.ARRAY_BUFFER, col, gl.STATIC_DRAW);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufUV);
+    gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW);
 
-    //console.log("COUNT " + this.count);
-    //console.log(this.positions);
 
     //console.log(this.indices);
 

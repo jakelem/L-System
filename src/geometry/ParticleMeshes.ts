@@ -20,7 +20,9 @@ class ParticleMeshes extends Mesh {
   spread : number;
   m_particle_size : number;
   system_center : vec3;
-  
+
+
+
   constructor(filepath: string, center: vec3 = vec3.fromValues(0,0,0), 
   scale:vec3 = vec3.fromValues(1,1,1), rotate:vec3 = vec3.fromValues(0,0,0), col:vec4 = vec4.fromValues(25,86,107,255)) {
     super(filepath); // Call the constructor of the super class. This is required.
@@ -42,7 +44,7 @@ class ParticleMeshes extends Mesh {
     for(let x = 0; x < this.xSubs; x++) {
       for(let y = 0; y < this.ySubs; y++) {
         for(let z = 0; z < this.zSubs; z++) {
-        let mesh = new Mesh('/geo/orchid.obj', vec3.fromValues(0,0,0), vec3.fromValues(0.3,0.3,0.3), 
+        let mesh = new ParticleMeshes('/geo/orchid.obj', vec3.fromValues(0,0,0), vec3.fromValues(0.3,0.3,0.3), 
         vec3.fromValues(0,0,0), vec4.fromValues(1,1,1,1))
         this.refreshParticleAt(mesh, x, y, z);
         mesh.m_angle = Math.random() * 180;
@@ -75,7 +77,6 @@ advanceParticles() {
           // console.log(i);
 
           let mesh = this.particles[i];
-          console.log("mesh " + mesh);
 
           let dx = vec3.create();
           let dx2 = vec3.fromValues(0,-1 * this.time_scale,0);

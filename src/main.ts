@@ -9,6 +9,8 @@ import {setGL} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import Mesh from './geometry/Mesh';
 import LSystem from './geometry/LSystem';
+import Foliage from './geometry/Foliage';
+
 import Orchids from './geometry/Orchids';
 import ParticleMeshes from './geometry/ParticleMeshes';
 
@@ -28,6 +30,8 @@ const controls = {
   'Radial Decay': 1.2,
   'Angle': 5,
   'Offset': -0.01,
+  'Leaf Size': 1.2,
+
   'Smooth Shading' : true,
   'Load Scene': loadScene,
   
@@ -38,7 +42,7 @@ const controls = {
 let icosphere: Icosphere;
 let square: Square;
 let m_mesh: Mesh;
-let l_system: Orchids;
+let l_system: Foliage;
 let background_meshes : ParticleMeshes;
 let m_background_mesh : Mesh;
 let xSubs = 5;
@@ -58,31 +62,6 @@ function downloadBackgroundMesh() {
 }
 
 
-
-function loadBackgroundMeshes() {
-
-    for(let x = 0; x < xSubs; x++) {
-      for(let y = 0; y < ySubs; y++) {
-        for(let z = 0; z < zSubs; z++) {
-        let mesh = new Mesh('/geo/orchid.obj', vec3.fromValues(0,0,0), vec3.fromValues(0.3,0.3,0.3), 
-        vec3.fromValues(0,0,0), vec4.fromValues(1,1,1,1))
-        let randX = (x + Math.random()) * 2;
-        let randY = (y + Math.random()) * 2;
-        let randZ = (z + Math.random() - zSubs / 2) * 2;
-        mesh.m_pos = vec3.fromValues(-randX,randY,randZ);
-        mesh.m_vel = vec3.fromValues(1.5,0,0);
-        mesh.m_angle = Math.random() * 180;
-        mesh.fromPrefabMesh(m_background_mesh);
-        //background_meshes.push(mesh);
-        mesh.loadAndCreate();
-      }
-    }
-  }
-
-  loadedBackground = true;
-}
-
-
 function loadScene() {
   background_meshes = new ParticleMeshes('');
   background_meshes.spread = 5;
@@ -90,7 +69,7 @@ function loadScene() {
   background_meshes.system_center = vec3.fromValues(10,0,0);
 
   downloadBackgroundMesh();
-  l_system = new Orchids();
+  l_system = new Foliage();
   l_system.iterations = controls.iterations;
   l_system.radius = controls["Radius"];
   l_system.orientRand = controls["Rotational Noise"];
@@ -100,7 +79,7 @@ function loadScene() {
   l_system.curvature = controls["Angle"];
   l_system.height = controls["Height"];
   l_system.smoothshading = controls["Smooth Shading"];
-
+  l_system.leaf_size = controls["Leaf Size"]
   l_system.refreshSystem();
   //console.log("SETNECE " + l_system.expandedSentence);
 
@@ -134,11 +113,13 @@ function main() {
   //gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.add(controls, 'iterations', 1, 8).step(1);
   gui.add(controls, 'Rotational Noise', 0, 40).step(1);
-  gui.add(controls, 'Radial Decay', -1, 3).step(0.01);
+  gui.add(controls, 'Radial Decay', -1, 5).step(0.01);
   gui.add(controls, 'Length Decay', -0.2, 2).step(0.01);
   gui.add(controls, 'Angle', 0, 20).step(0.01);
   gui.add(controls, 'Radius', 0.1, 2).step(0.01);
   gui.add(controls, 'Height', 0.1, 4).step(0.01);
+  gui.add(controls, 'Leaf Size', 0.0, 5).step(0.01);
+
   //gui.add(controls, 'Offset', -10, 10).step(0.01);
   gui.add(controls, 'Smooth Shading');
   gui.add(controls, 'Load Scene');
@@ -157,7 +138,7 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(0, 4, 15), vec3.fromValues(0, 4, 0));
+  const camera = new Camera(vec3.fromValues(0, 20, 50), vec3.fromValues(0, 20, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(225/255, 240/255, 246/255, 1);
@@ -167,6 +148,7 @@ function main() {
     new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
   ]);
+  lambert.createTexture();
 
 
   const planet = new ShaderProgram([
@@ -200,27 +182,29 @@ function main() {
 
 
 
-    for(let mesh of l_system.meshes) {
-      renderer.render(camera, planet, [
-        mesh,
-      ]
-    );}
+    // for(let mesh of l_system.meshes) {
+    //   renderer.render(camera, planet, [
+    //     mesh,
+    //   ]
+    // );}
 
-    renderer.render(camera, planet, [
+    renderer.render(camera, lambert, [
       //icosphere,
       l_system.fullMesh,
     ]);
 
     let ts = 0.01;
+    /*
     background_meshes.advanceParticles();
 
+    
     for(let i = 0; i < background_meshes.particles.length; i++) {
       let mesh : Mesh = background_meshes.particles[i];
       let model = mesh.getModelMatrix();
       renderer.render(camera, planet, [
         mesh,
       ],model);
-    }
+    }*/
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

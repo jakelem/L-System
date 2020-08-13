@@ -4,9 +4,9 @@ Kd 0.50 0.27 0.27
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
-newmtl lambert2SG
+newmtl stem:initialShadingGroup
 illum 4
-Kd 0.50 0.50 0.50
+Kd 0.50 0.27 0.27
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00

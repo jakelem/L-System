@@ -136,7 +136,7 @@ class Orchids extends LSystem  {
 
     //console.log(mesh);
 
-    this.fullMesh.appendUntransformed(mesh);
+    this.fullMesh.transformAndAppend(mesh,mesh);
     let rotMat = mat4.create();
     mat4.rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180)
     mat4.rotateY(rotMat, rotMat, this.currTurtle.orientation[1] * Math.PI / 180)
@@ -166,7 +166,7 @@ class Orchids extends LSystem  {
 
     vec3.clone(this.currTurtle.orientation), vec4.fromValues(0.29,0.17,0.11,1));
 
-    this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh.transform, mesh.m_color);
+    this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh);
 
     let rotMat = mat4.create();
     mat4.rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180)
@@ -186,7 +186,7 @@ class Orchids extends LSystem  {
     let mesh = new Mesh('/geo/petal.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(this.orchidSize, this.orchidSize, this.orchidSize), vec3.clone(this.currTurtle.orientation),
     vec4.fromValues(1,1,1,1));
 
-    this.fullMesh.transformAndAppend(this.meshNames.get("petal"), mesh.transform, mesh.m_color);
+    this.fullMesh.transformAndAppend(this.meshNames.get("petal"), mesh);
   }
 
   sproutLeaf() {
@@ -195,7 +195,7 @@ class Orchids extends LSystem  {
     let mesh = new Mesh('/geo/leaf.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(sF,1,sF), vec3.clone(this.currTurtle.orientation),
     vec4.fromValues(0.38,0.51,0.33,1));
 
-    this.fullMesh.transformAndAppend(this.meshNames.get("orchid"), mesh.transform, mesh.m_color);
+    this.fullMesh.transformAndAppend(this.meshNames.get("orchid"), mesh);
   }
 
   addTurtleDepth(d : number) {

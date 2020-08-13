@@ -22,8 +22,10 @@ class LSystem  {
   offset : number;
   curvature : number;
   smoothshading : boolean;
-
+  leaf_size : number
   turtleStack : Array<Turtle>;
+
+  length_stoch : number;
 
   meshes : Array<Mesh>;
   fullMesh : Mesh;
@@ -50,6 +52,7 @@ class LSystem  {
     this.fillCharToAction();
     this.curvature = 5;
     this.height = 0.2;
+    this.leaf_size = 1;
     this.smoothshading = true;
   }
 
@@ -61,21 +64,16 @@ class LSystem  {
       'stem': './geo/stem.obj',
       'leaf': './geo/leaf.obj',
       'petal': './geo/petal.obj',
+      'plane': './geo/plane.obj',
 
     }, (meshes: any) => {
-      let orchid = new Mesh('./geo/orchid.obj');
-      orchid.loadMesh(meshes.orchid);
-      let stem = new Mesh('./geo/stem.obj');
-      stem.loadMesh(meshes.stem);
-      let leaf = new Mesh('./geo/leaf.obj');
-      leaf.loadMesh(meshes.leaf);
-      let petal = new Mesh('./geo/petal.obj');
-      petal.loadMesh(meshes.petal);
+      for (let item in meshes) {
+        //console.log("Item" + item.toString());
+        let mesh = new Mesh('/geo/cube.obj');
+        mesh.loadMesh(meshes[item]);
+        this.meshNames.set(item.toString(), mesh);
 
-      this.meshNames.set("orchid", orchid);
-      this.meshNames.set("stem", stem);
-      this.meshNames.set("leaf", leaf);
-      this.meshNames.set("petal", petal);
+      }
 
       //this.loadMesh(meshes.mesh);
       this.expandAxiom();
@@ -121,7 +119,7 @@ class LSystem  {
 
   advanceTurtle() {
     let mesh = new Mesh('/geo/feather.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(1,1,1), vec3.clone(this.currTurtle.orientation))
-    this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh.transform, mesh.m_color);
+    this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh);
 
     let rotMat = mat4.create();
     mat4.rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180)
@@ -215,6 +213,9 @@ class LSystem  {
   createAll() {
     //console.log("creating all");
     this.fullMesh.create();
+   // console.log("MESH UVS " + this.fullMesh.uvs)
+    //console.log("MESH UVS " + this.fullMesh.positions)
+
     //console.log(this.fullMesh);
 
   }

@@ -85,9 +85,9 @@
 /* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "a", function() { return __WEBPACK_IMPORTED_MODULE_4__gl_matrix_mat4_js__; });
 /* unused harmony reexport quat */
 /* unused harmony reexport quat2 */
-/* unused harmony reexport vec2 */
-/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "b", function() { return __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec3_js__; });
-/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "c", function() { return __WEBPACK_IMPORTED_MODULE_9__gl_matrix_vec4_js__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "b", function() { return __WEBPACK_IMPORTED_MODULE_7__gl_matrix_vec2_js__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "c", function() { return __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec3_js__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "d", function() { return __WEBPACK_IMPORTED_MODULE_9__gl_matrix_vec4_js__; });
 
 
 
@@ -410,10 +410,10 @@ var ObjMtlLoader = __webpack_require__(15);
 var OBJ = __webpack_require__(6);
 var fs = __webpack_require__(20);
 class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* default */] {
-    constructor(filepath, center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1, 1, 1), rotate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(25, 86, 107, 255)) {
+    constructor(filepath, center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(1, 1, 1), rotate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(25, 86, 107, 255)) {
         super(); // Call the constructor of the super class. This is required.
         this.objMtlLoader = new ObjMtlLoader();
-        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
+        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
         this.filepath = filepath;
         this.scale = scale;
         this.rotate = rotate;
@@ -422,14 +422,18 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
         this.normals = new Array();
         this.colors = new Array();
         this.indices = new Array();
+        this.uvs = new Array();
+        this.uv_cell = 0;
+        this.tex_divs = 10;
+        this.uv_scale = 1.0 / this.tex_divs;
+        this.debug = false;
         this.enabled = true;
         this.maxIdx = -1;
-        this.m_size = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1, 1, 1);
         this.getOverallTransformation();
     }
     getOverallTransformation() {
         this.transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].translate(this.transform, this.transform, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(this.center[0], this.center[1], this.center[2]));
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].translate(this.transform, this.transform, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.center[0], this.center[1], this.center[2]));
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(this.transform, this.transform, this.rotate[0] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateY(this.transform, this.transform, this.rotate[1] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(this.transform, this.transform, this.rotate[2] * Math.PI / 180);
@@ -443,10 +447,21 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].scale(model, model, this.m_size);
         return model;
     }
+    transformUV(uvx, uvy) {
+        uvx *= this.uv_scale;
+        uvy *= this.uv_scale;
+        let cel_y = this.uv_scale * Math.floor(this.uv_cell / this.tex_divs);
+        let cel_x = this.uv_scale * (this.uv_cell % this.tex_divs);
+        let nextcel_y = this.uv_scale * Math.floor(this.uv_cell / this.tex_divs + 1);
+        return __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(uvx + cel_x, Math.min(uvy + cel_y, nextcel_y - 0.007));
+    }
     exportObj() {
         let output = '';
         for (let i = 0; i < this.positions.length; i += 4) {
             output += 'v ' + this.positions[i] + ' ' + this.positions[i + 1] + ' ' + this.positions[i + 2] + '\n';
+        }
+        for (let i = 0; i < this.normals.length; i += 2) {
+            output += 'vt ' + this.uvs[i] + ' ' + (1.0 - this.uvs[i + 1]) + '\n';
         }
         for (let i = 0; i < this.normals.length; i += 4) {
             output += 'vn ' + this.normals[i] + ' ' + this.normals[i + 1] + ' ' + this.normals[i + 2] + '\n';
@@ -454,10 +469,11 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
         for (let i = 0; i < this.indices.length; i += 3) {
             output += 'f';
             for (let j = 0; j < 3; j++) {
-                output += ' ' + (this.indices[i + j] + 1) + '//' + (this.indices[i + j] + 1);
+                output += ' ' + (this.indices[i + j] + 1) + '/' + (this.indices[i + j] + 1) + '/' + (this.indices[i + j] + 1);
             }
             output += '\n';
         }
+        console.log(output);
         return output;
     }
     loadAndCreate() {
@@ -477,50 +493,44 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
             this.loadMesh(meshes.mesh);
         });
     }
-    appendUntransformed(mesh) {
-        for (let i = 0; i < mesh.positions.length; i += 1) {
-            this.positions.push(mesh.positions[i]);
-            this.normals.push(mesh.normals[i]);
-            this.colors.push(mesh.colors[i]);
-        }
-        let initIdx = this.maxIdx + 1;
-        for (let i = 0; i < mesh.indices.length; i += 1) {
-            let idx = mesh.indices[i] + initIdx;
-            this.indices.push(idx);
-            this.maxIdx = Math.max(idx, this.maxIdx);
-        }
-    }
-    transformAndAppend(mesh, trans, col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(0.5, 0.5, 0.5, 1)) {
+    transformAndAppend(prefab, transformed) {
         //console.log(numPos);
         let v = 0;
-        for (let i = 0; i < mesh.positions.length; i += 4) {
-            let pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(mesh.positions[i], mesh.positions[i + 1], mesh.positions[i + 2], mesh.positions[i + 3]);
-            let nor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(mesh.normals[i], mesh.normals[i + 1], mesh.normals[i + 2], mesh.normals[i + 3]);
-            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].transformMat4(pos, pos, trans);
-            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].transformMat4(nor, nor, trans);
-            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].normalize(nor, nor);
+        for (let i = 0; i < prefab.positions.length; i += 4) {
+            let pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(prefab.positions[i], prefab.positions[i + 1], prefab.positions[i + 2], prefab.positions[i + 3]);
+            let nor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(prefab.normals[i], prefab.normals[i + 1], prefab.normals[i + 2], prefab.normals[i + 3]);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].transformMat4(pos, pos, transformed.transform);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].transformMat4(nor, nor, transformed.transform);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].normalize(nor, nor);
             for (let j = 0; j < 4; j += 1) {
                 this.positions.push(pos[j]);
                 this.normals.push(nor[j]);
-                this.colors.push(col[j]);
+                this.colors.push(transformed.m_color[j]);
             }
             v += 4;
         }
+        for (let i = 0; i < prefab.uvs.length - 1; i += 2) {
+            // mesh.uv_cell = 2;
+            let v2 = transformed.transformUV(prefab.uvs[i], prefab.uvs[i + 1]);
+            //console.log("v2 " + v2)
+            this.uvs.push(v2[0]);
+            this.uvs.push(v2[1]);
+        }
         //this.indices = new Array<number>(mesh.indices.length);
         let initIdx = this.maxIdx + 1;
-        for (let i = 0; i < mesh.indices.length; i += 1) {
-            let idx = mesh.indices[i] + initIdx;
+        for (let i = 0; i < prefab.indices.length; i += 1) {
+            let idx = prefab.indices[i] + initIdx;
             this.indices.push(idx);
             this.maxIdx = Math.max(idx, this.maxIdx);
         }
     }
     //parents this mesh's transformation to the input mesh's
     addPrefabMeshAsChild(mesh) {
-        this.transformAndAppend(mesh, this.transform);
+        this.transformAndAppend(mesh, this);
     }
     //preserves the transformation of the input mesh
     addPrefabMesh(mesh) {
-        this.transformAndAppend(mesh, mesh.transform);
+        this.transformAndAppend(mesh, mesh);
     }
     fromPrefabMesh(mesh) {
         this.positions = new Array();
@@ -530,20 +540,19 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
         this.addPrefabMeshAsChild(mesh);
     }
     loadMesh(mesh) {
-        //console.log(mesh)
         let numPos = mesh.vertices.length / 3 * 4;
         this.positions = new Array(numPos);
         this.normals = new Array(numPos);
         this.colors = new Array(numPos);
         let v = 0;
-        let col1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(25, 86, 107, 255);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].scale(col1, col1, 1 / 255);
-        let col2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(176, 182, 158, 255);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].scale(col2, col2, 1 / 255);
+        let col1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(25, 86, 107, 255);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].scale(col1, col1, 1 / 255);
+        let col2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(176, 182, 158, 255);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].scale(col2, col2, 1 / 255);
         for (let i = 0; i < mesh.vertices.length; i += 3) {
-            let pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(mesh.vertices[i], mesh.vertices[i + 1], mesh.vertices[i + 2], 1);
-            let nor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(mesh.vertexNormals[i], mesh.vertexNormals[i + 1], mesh.vertexNormals[i + 2], 0);
-            let col = this.m_color;
+            let pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(mesh.vertices[i], mesh.vertices[i + 1], mesh.vertices[i + 2], 1);
+            let nor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(mesh.vertexNormals[i], mesh.vertexNormals[i + 1], mesh.vertexNormals[i + 2], 0);
+            let col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(mesh.textures[i], mesh.textures[i + 1], mesh.vertexNormals[i + 2], 0);
             for (let j = 0; j < 4; j += 1) {
                 this.positions[v + j] = pos[j];
                 this.normals[v + j] = nor[j];
@@ -551,9 +560,34 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
             }
             v += 4;
         }
+        v = 0;
+        this.uvs = new Array();
+        // console.log("VERT LENGTH " + mesh.vertices.length);
+        //console.log("TEX LENGTH " +  mesh.textures.length);
+        for (let i = 0; i < mesh.textures.length; i += 1) {
+            //let transuv = this.transformUV(mesh.textures[i], mesh.textures[i+1]);
+            //this.uvs.push(transuv[0]);
+            //this.uvs.push(transuv[1]);
+            // console.log("pushed to uvs" + mesh.textures[i])
+            this.uvs.push(mesh.textures[i]);
+        }
         this.indices = new Array(mesh.indices.length);
         for (let i = 0; i < mesh.indices.length; i += 1) {
             this.indices[i] = mesh.indices[i];
+        }
+    }
+    appendUntransformed(mesh) {
+        for (let i = 0; i < mesh.positions.length; i += 1) {
+            this.positions.push(mesh.positions[i]);
+            this.normals.push(mesh.normals[i]);
+            this.colors.push(mesh.colors[i]);
+            this.uvs.push(mesh.uvs[i]);
+        }
+        let initIdx = this.maxIdx + 1;
+        for (let i = 0; i < mesh.indices.length; i += 1) {
+            let idx = mesh.indices[i] + initIdx;
+            this.indices.push(idx);
+            this.maxIdx = Math.max(idx, this.maxIdx);
         }
     }
     create() {
@@ -567,11 +601,13 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
             let norm = Float32Array.from(this.normals);
             let pos = Float32Array.from(this.positions);
             let col = Float32Array.from(this.colors);
+            let uv = Float32Array.from(this.uvs);
             let idx = Uint32Array.from(this.indices);
             this.generateIdx();
             this.generatePos();
             this.generateNor();
             this.generateCol();
+            this.generateUV();
             this.count = this.indices.length;
             __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.bufIdx);
             __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, idx, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
@@ -581,12 +617,13 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
             __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, pos, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
             __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufCol);
             __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, col, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
-            //console.log("COUNT " + this.count);
-            //console.log(this.positions);
+            __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufUV);
+            __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, uv, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
             //console.log(this.indices);
         }
     }
 }
+Mesh.count = 0;
 ;
 /* harmony default export */ __webpack_exports__["a"] = (Mesh);
 
@@ -11831,18 +11868,18 @@ function done(stream, er, data) {
 var OBJ = __webpack_require__(6);
 class Turtle {
     constructor() {
-        this.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0);
-        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0);
+        this.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
         this.prevDepth = -1;
-        this.prevOrientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0);
-        this.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0);
+        this.prevOrientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
+        this.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0);
         this.depth = 0;
     }
     copyshallow(t) {
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.prevPosition, t.prevPosition);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.prevOrientation, t.prevOrientation);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.position, t.position);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.orientation, t.orientation);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.prevPosition, t.prevPosition);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.prevOrientation, t.prevOrientation);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.position, t.position);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.orientation, t.orientation);
         this.depth = t.depth;
         this.prevDepth = t.prevDepth;
     }
@@ -11868,7 +11905,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__globals__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__ = __webpack_require__(90);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__geometry_Mesh__ = __webpack_require__(7);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__geometry_Orchids__ = __webpack_require__(111);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__geometry_Foliage__ = __webpack_require__(111);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__geometry_ParticleMeshes__ = __webpack_require__(114);
 
 
@@ -11896,6 +11933,7 @@ const controls = {
     'Radial Decay': 1.2,
     'Angle': 5,
     'Offset': -0.01,
+    'Leaf Size': 1.2,
     'Smooth Shading': true,
     'Load Scene': loadScene,
     'Export OBJ': saveFile,
@@ -11920,32 +11958,13 @@ function downloadBackgroundMesh() {
         background_meshes.loadParticleMeshes();
     });
 }
-function loadBackgroundMeshes() {
-    for (let x = 0; x < xSubs; x++) {
-        for (let y = 0; y < ySubs; y++) {
-            for (let z = 0; z < zSubs; z++) {
-                let mesh = new __WEBPACK_IMPORTED_MODULE_9__geometry_Mesh__["a" /* default */]('/geo/orchid.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0.3, 0.3, 0.3), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(1, 1, 1, 1));
-                let randX = (x + Math.random()) * 2;
-                let randY = (y + Math.random()) * 2;
-                let randZ = (z + Math.random() - zSubs / 2) * 2;
-                mesh.m_pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(-randX, randY, randZ);
-                mesh.m_vel = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1.5, 0, 0);
-                mesh.m_angle = Math.random() * 180;
-                mesh.fromPrefabMesh(m_background_mesh);
-                //background_meshes.push(mesh);
-                mesh.loadAndCreate();
-            }
-        }
-    }
-    loadedBackground = true;
-}
 function loadScene() {
     background_meshes = new __WEBPACK_IMPORTED_MODULE_11__geometry_ParticleMeshes__["a" /* default */]('');
     background_meshes.spread = 5;
     background_meshes.m_particle_size = 0.4;
-    background_meshes.system_center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(10, 0, 0);
+    background_meshes.system_center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(10, 0, 0);
     downloadBackgroundMesh();
-    l_system = new __WEBPACK_IMPORTED_MODULE_10__geometry_Orchids__["a" /* default */]();
+    l_system = new __WEBPACK_IMPORTED_MODULE_10__geometry_Foliage__["a" /* default */]();
     l_system.iterations = controls.iterations;
     l_system.radius = controls["Radius"];
     l_system.orientRand = controls["Rotational Noise"];
@@ -11955,14 +11974,15 @@ function loadScene() {
     l_system.curvature = controls["Angle"];
     l_system.height = controls["Height"];
     l_system.smoothshading = controls["Smooth Shading"];
+    l_system.leaf_size = controls["Leaf Size"];
     l_system.refreshSystem();
     //console.log("SETNECE " + l_system.expandedSentence);
-    icosphere = new __WEBPACK_IMPORTED_MODULE_3__geometry_Icosphere__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), 1, controls.tesselations);
+    icosphere = new __WEBPACK_IMPORTED_MODULE_3__geometry_Icosphere__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), 1, controls.tesselations);
     //icosphere.create();
-    m_mesh = new __WEBPACK_IMPORTED_MODULE_9__geometry_Mesh__["a" /* default */]('/geo/feather.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 1, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1, 1, 1), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(98, 0, 0));
+    m_mesh = new __WEBPACK_IMPORTED_MODULE_9__geometry_Mesh__["a" /* default */]('/geo/feather.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 1, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(1, 1, 1), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(98, 0, 0));
     //m_mesh.create();
     //m_mesh.center = vec4.fromValues(0, 1, 2, 1);
-    square = new __WEBPACK_IMPORTED_MODULE_4__geometry_Square__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0));
+    square = new __WEBPACK_IMPORTED_MODULE_4__geometry_Square__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0));
     square.create();
 }
 function saveFile() {
@@ -11983,11 +12003,12 @@ function main() {
     //gui.add(controls, 'tesselations', 0, 8).step(1);
     gui.add(controls, 'iterations', 1, 8).step(1);
     gui.add(controls, 'Rotational Noise', 0, 40).step(1);
-    gui.add(controls, 'Radial Decay', -1, 3).step(0.01);
+    gui.add(controls, 'Radial Decay', -1, 5).step(0.01);
     gui.add(controls, 'Length Decay', -0.2, 2).step(0.01);
     gui.add(controls, 'Angle', 0, 20).step(0.01);
     gui.add(controls, 'Radius', 0.1, 2).step(0.01);
     gui.add(controls, 'Height', 0.1, 4).step(0.01);
+    gui.add(controls, 'Leaf Size', 0.0, 5).step(0.01);
     //gui.add(controls, 'Offset', -10, 10).step(0.01);
     gui.add(controls, 'Smooth Shading');
     gui.add(controls, 'Load Scene');
@@ -12003,7 +12024,7 @@ function main() {
     Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* setGL */])(gl);
     // Initial call to load scene
     loadScene();
-    const camera = new __WEBPACK_IMPORTED_MODULE_6__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 4, 15), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 4, 0));
+    const camera = new __WEBPACK_IMPORTED_MODULE_6__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 20, 50), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 20, 0));
     const renderer = new __WEBPACK_IMPORTED_MODULE_5__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
     renderer.setClearColor(225 / 255, 240 / 255, 246 / 255, 1);
     gl.enable(gl.DEPTH_TEST);
@@ -12011,6 +12032,7 @@ function main() {
         new __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(116)),
         new __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(117)),
     ]);
+    lambert.createTexture();
     const planet = new __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__["b" /* default */]([
         new __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(118)),
         new __WEBPACK_IMPORTED_MODULE_8__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(119)),
@@ -12035,24 +12057,27 @@ function main() {
         ]);
         time += 1;
         background.setTime(time);
-        for (let mesh of l_system.meshes) {
-            renderer.render(camera, planet, [
-                mesh,
-            ]);
-        }
-        renderer.render(camera, planet, [
+        // for(let mesh of l_system.meshes) {
+        //   renderer.render(camera, planet, [
+        //     mesh,
+        //   ]
+        // );}
+        renderer.render(camera, lambert, [
             //icosphere,
             l_system.fullMesh,
         ]);
         let ts = 0.01;
+        /*
         background_meshes.advanceParticles();
-        for (let i = 0; i < background_meshes.particles.length; i++) {
-            let mesh = background_meshes.particles[i];
-            let model = mesh.getModelMatrix();
-            renderer.render(camera, planet, [
-                mesh,
-            ], model);
-        }
+    
+        
+        for(let i = 0; i < background_meshes.particles.length; i++) {
+          let mesh : Mesh = background_meshes.particles[i];
+          let model = mesh.getModelMatrix();
+          renderer.render(camera, planet, [
+            mesh,
+          ],model);
+        }*/
         stats.end();
         // Tell the browser to call `tick` again whenever it renders a new frame
         requestAnimationFrame(tick);
@@ -13951,50 +13976,51 @@ function equals(a, b) {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* unused harmony export create */
-/* unused harmony export clone */
-/* unused harmony export fromValues */
-/* unused harmony export copy */
-/* unused harmony export set */
-/* unused harmony export add */
-/* unused harmony export subtract */
-/* unused harmony export multiply */
-/* unused harmony export divide */
-/* unused harmony export ceil */
-/* unused harmony export floor */
-/* unused harmony export min */
-/* unused harmony export max */
-/* unused harmony export round */
-/* unused harmony export scale */
-/* unused harmony export scaleAndAdd */
-/* unused harmony export distance */
-/* unused harmony export squaredDistance */
-/* unused harmony export length */
-/* unused harmony export squaredLength */
-/* unused harmony export negate */
-/* unused harmony export inverse */
-/* unused harmony export normalize */
-/* unused harmony export dot */
-/* unused harmony export cross */
-/* unused harmony export lerp */
-/* unused harmony export random */
-/* unused harmony export transformMat2 */
-/* unused harmony export transformMat2d */
-/* unused harmony export transformMat3 */
-/* unused harmony export transformMat4 */
-/* unused harmony export rotate */
-/* unused harmony export angle */
-/* unused harmony export str */
-/* unused harmony export exactEquals */
-/* unused harmony export equals */
-/* unused harmony export len */
-/* unused harmony export sub */
-/* unused harmony export mul */
-/* unused harmony export div */
-/* unused harmony export dist */
-/* unused harmony export sqrDist */
-/* unused harmony export sqrLen */
-/* unused harmony export forEach */
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (immutable) */ __webpack_exports__["create"] = create;
+/* harmony export (immutable) */ __webpack_exports__["clone"] = clone;
+/* harmony export (immutable) */ __webpack_exports__["fromValues"] = fromValues;
+/* harmony export (immutable) */ __webpack_exports__["copy"] = copy;
+/* harmony export (immutable) */ __webpack_exports__["set"] = set;
+/* harmony export (immutable) */ __webpack_exports__["add"] = add;
+/* harmony export (immutable) */ __webpack_exports__["subtract"] = subtract;
+/* harmony export (immutable) */ __webpack_exports__["multiply"] = multiply;
+/* harmony export (immutable) */ __webpack_exports__["divide"] = divide;
+/* harmony export (immutable) */ __webpack_exports__["ceil"] = ceil;
+/* harmony export (immutable) */ __webpack_exports__["floor"] = floor;
+/* harmony export (immutable) */ __webpack_exports__["min"] = min;
+/* harmony export (immutable) */ __webpack_exports__["max"] = max;
+/* harmony export (immutable) */ __webpack_exports__["round"] = round;
+/* harmony export (immutable) */ __webpack_exports__["scale"] = scale;
+/* harmony export (immutable) */ __webpack_exports__["scaleAndAdd"] = scaleAndAdd;
+/* harmony export (immutable) */ __webpack_exports__["distance"] = distance;
+/* harmony export (immutable) */ __webpack_exports__["squaredDistance"] = squaredDistance;
+/* harmony export (immutable) */ __webpack_exports__["length"] = length;
+/* harmony export (immutable) */ __webpack_exports__["squaredLength"] = squaredLength;
+/* harmony export (immutable) */ __webpack_exports__["negate"] = negate;
+/* harmony export (immutable) */ __webpack_exports__["inverse"] = inverse;
+/* harmony export (immutable) */ __webpack_exports__["normalize"] = normalize;
+/* harmony export (immutable) */ __webpack_exports__["dot"] = dot;
+/* harmony export (immutable) */ __webpack_exports__["cross"] = cross;
+/* harmony export (immutable) */ __webpack_exports__["lerp"] = lerp;
+/* harmony export (immutable) */ __webpack_exports__["random"] = random;
+/* harmony export (immutable) */ __webpack_exports__["transformMat2"] = transformMat2;
+/* harmony export (immutable) */ __webpack_exports__["transformMat2d"] = transformMat2d;
+/* harmony export (immutable) */ __webpack_exports__["transformMat3"] = transformMat3;
+/* harmony export (immutable) */ __webpack_exports__["transformMat4"] = transformMat4;
+/* harmony export (immutable) */ __webpack_exports__["rotate"] = rotate;
+/* harmony export (immutable) */ __webpack_exports__["angle"] = angle;
+/* harmony export (immutable) */ __webpack_exports__["str"] = str;
+/* harmony export (immutable) */ __webpack_exports__["exactEquals"] = exactEquals;
+/* harmony export (immutable) */ __webpack_exports__["equals"] = equals;
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "len", function() { return len; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "sub", function() { return sub; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mul", function() { return mul; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "div", function() { return div; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "dist", function() { return dist; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "sqrDist", function() { return sqrDist; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "sqrLen", function() { return sqrLen; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "forEach", function() { return forEach; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__common_js__ = __webpack_require__(1);
 
 
@@ -19077,7 +19103,7 @@ class Icosphere extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a"
         super(); // Call the constructor of the super class. This is required.
         this.radius = radius;
         this.subdivisions = subdivisions;
-        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
+        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
     }
     create() {
         const X = 0.525731112119133606;
@@ -19158,8 +19184,8 @@ class Icosphere extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a"
                 let key = [v0, v1].sort().join('_');
                 if (!edgeMap.has(key)) {
                     let midpoint = new Float32Array(buffer0, vertexByteOffset + vertices.length * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].add(midpoint, vertices[v0], vertices[v1]);
-                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].normalize(midpoint, midpoint);
+                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].add(midpoint, vertices[v0], vertices[v1]);
+                    __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].normalize(midpoint, midpoint);
                     edgeMap.set(key, vertices.length);
                     vertices.push(midpoint);
                 }
@@ -19196,7 +19222,7 @@ class Icosphere extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a"
         // Populate one position for each normal
         for (let i = 0; i < vertices.length; ++i) {
             let pos = new Float32Array(buffer0, positionByteOffset + i * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
-            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].scaleAndAdd(pos, this.center, vertices[i], this.radius);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].scaleAndAdd(pos, this.center, vertices[i], this.radius);
         }
         this.buffer = buffer0;
         this.indices = new Uint32Array(this.buffer, indexByteOffset, triangles.length * 3);
@@ -19237,7 +19263,7 @@ class Icosphere extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a"
 class Square extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* default */] {
     constructor(center) {
         super(); // Call the constructor of the super class. This is required.
-        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
+        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
     }
     create() {
         this.indices = new Uint32Array([0, 1, 2,
@@ -19250,9 +19276,14 @@ class Square extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /*
             1, -1, 0.00001, 1,
             1, 1, 0.00001, 1,
             -1, 1, 0.00001, 1]);
+        this.uvs = new Float32Array([0, 0,
+            1, 0,
+            1, 1,
+            0, 1]);
         this.generateIdx();
         this.generatePos();
         this.generateNor();
+        this.generateUV();
         console.log("square " + this.positions.length);
         console.log("square NORMS NUM " + this.normals.length);
         console.log("square INDICES NUM " + this.indices.length);
@@ -19263,6 +19294,8 @@ class Square extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /*
         __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.normals, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
         __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufPos);
         __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.positions, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufUV);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.uvs, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
         console.log(`Created square`);
     }
 }
@@ -19297,7 +19330,7 @@ class OpenGLRenderer {
     render(camera, prog, drawables, inModel = undefined) {
         let model = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
         let viewProj = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
-        let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(1, 1, 0, 1);
+        let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(1, 1, 0, 1);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].identity(model);
         if (inModel !== undefined) {
             model = inModel;
@@ -19332,15 +19365,15 @@ class Camera {
         this.aspectRatio = 1;
         this.near = 0.1;
         this.far = 1000;
-        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
-        this.direction = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
-        this.target = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
-        this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+        this.direction = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+        this.target = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+        this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
         this.controls = CameraControls(document.getElementById('canvas'), {
             eye: position,
             center: target,
         });
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].add(this.target, this.position, this.direction);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(this.target, this.position, this.direction);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
     }
     setAspectRatio(aspectRatio) {
@@ -19351,7 +19384,7 @@ class Camera {
     }
     update() {
         this.controls.tick();
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].add(this.target, this.position, this.direction);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(this.target, this.position, this.direction);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
     }
 }
@@ -22432,17 +22465,53 @@ class ShaderProgram {
         this.attrPos = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Pos");
         this.attrNor = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Nor");
         this.attrCol = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Col");
+        this.attrUV = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_UV");
         this.unifModel = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Model");
         this.unifModelInvTr = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ModelInvTr");
         this.unifViewProj = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ViewProj");
         this.unifColor = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Color");
         this.unifTime = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Time");
+        this.unifTexture = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Texture");
     }
     use() {
         if (activeProgram !== this.prog) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].useProgram(this.prog);
             activeProgram = this.prog;
         }
+    }
+    static isPowerOf2(value) {
+        return (value & (value - 1)) === 0;
+    }
+    createTexture() {
+        this.use();
+        // setting up texture in OpenGL
+        let texture = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].createTexture();
+        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindTexture(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, texture);
+        // Fill the texture with a 1x1 blue pixel.
+        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].texImage2D(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, 0, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RGBA, 1, 1, 0, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RGBA, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+        // Asynchronously load an image
+        var image = new Image();
+        image.src = "./textures/textures.png";
+        image.crossOrigin = "anonymous";
+        console.log(image.src);
+        image.addEventListener('load', function () {
+            // Now that the image has loaded make copy it to the texture.
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindTexture(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, texture);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].texImage2D(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, 0, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RGBA, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RGBA, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_BYTE, image);
+            // Check if the image is a power of 2 in both dimensions.
+            if (ShaderProgram.isPowerOf2(image.width) && ShaderProgram.isPowerOf2(image.height)) {
+                // Yes, it's a power of 2. Generate mips.
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].generateMipmap(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D);
+            }
+            else {
+                // No, it's not a power of 2. Turn of mips and set wrapping to clamp to edge
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].texParameteri(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_WRAP_S, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].CLAMP_TO_EDGE);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].texParameteri(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_WRAP_T, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].CLAMP_TO_EDGE);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].texParameteri(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_MIN_FILTER, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].LINEAR);
+            }
+        });
+        this.texture = texture;
+        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1i(this.unifTexture, 0);
     }
     setModelMatrix(model) {
         this.use();
@@ -22487,6 +22556,15 @@ class ShaderProgram {
         if (this.attrCol != -1 && d.bindCol()) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrCol);
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrCol, 4, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0);
+        }
+        if (this.attrUV != -1 && d.bindUV()) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrUV);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrUV, 2, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0);
+        }
+        if (this.unifTexture != -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].activeTexture(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE0); //GL supports up to 32 different active textures at once(0 - 31)
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindTexture(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TEXTURE_2D, this.texture);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1i(this.unifTexture, 0);
         }
         d.bindIdx();
         __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].drawElements(d.drawMode(), d.elemCount(), __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_INT, 0);
@@ -23824,7 +23902,7 @@ function extend() {
 
 
 
-class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] {
+class Foliage extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] {
     constructor() {
         super();
         this.smoothfactor = 1.0;
@@ -23836,11 +23914,11 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
         this.charToAction = new Map();
         this.expandedSentence = "";
         this.currTurtle = new __WEBPACK_IMPORTED_MODULE_4__Turtle__["a" /* default */]();
-        this.currTurtle.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, -this.height, 0);
-        this.currTurtle.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 1, 0);
+        this.currTurtle.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, -this.height, 0);
+        this.currTurtle.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 1, 0);
         this.decay = 0.2;
         this.stepDecay = 0.1;
-        this.orchidSize = 0.3;
+        this.orchidSize = 1.6;
         this.radius = 0.2;
         this.offset = -0.01;
         this.charExpansions.clear();
@@ -23908,7 +23986,7 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
     advanceTurtleBy(frac) {
         let prevSF = Math.exp(-this.currTurtle.prevDepth * this.decay) * this.radius;
         let sF = Math.exp(-this.currTurtle.depth * this.decay) * this.radius;
-        let sStep = Math.exp(-this.currTurtle.depth * this.stepDecay) * this.height;
+        let sStep = 10 * Math.exp(-this.currTurtle.depth * this.stepDecay) * this.height;
         prevSF = Math.min(prevSF, this.radius);
         sF = Math.min(sF, this.radius);
         prevSF = Math.max(prevSF, 0.005);
@@ -23917,26 +23995,30 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
         //let mesh = new Mesh('/geo/stem.obj', vec3.clone(this.currTurtle.position), vec3.fromValues(sF,sStep,sF), 
         let mesh = new __WEBPACK_IMPORTED_MODULE_3__Cylinder__["a" /* default */]();
         mesh.smoothshade = this.smoothshading;
-        mesh.m_color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(0.29, 0.17, 0.11, 1);
+        mesh.m_color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(0.29, 0.17, 0.11, 1);
         mesh.assignFaceCenters(this.currTurtle.prevPosition, this.currTurtle.position);
         mesh.assignFaceScaleUniform(prevSF, sF);
         mesh.assignFaceRotations(this.currTurtle.prevOrientation, this.currTurtle.orientation);
+        // mesh.assignFaceRotations(vec3.create(), vec3.create())
         //mesh.assignFaceRotations(prevSF, sF);
         mesh.loadMesh();
         //console.log(mesh);
-        this.fullMesh.appendUntransformed(mesh);
+        mesh.debug = true;
+        this.fullMesh.transformAndAppend(mesh, mesh);
         let rotMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180);
+        let ox = (Math.random() - 0.5) * this.orientRand;
+        let oz = (Math.random() - 0.5) * this.orientRand;
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(rotMat, rotMat, (this.currTurtle.orientation[0] + ox) * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateY(rotMat, rotMat, this.currTurtle.orientation[1] * Math.PI / 180);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(rotMat, rotMat, this.currTurtle.orientation[2] * Math.PI / 180);
-        let offset = sStep * 0.6;
-        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, sStep - offset, 0);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].transformMat4(step, step, rotMat);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(rotMat, rotMat, (this.currTurtle.orientation[2] + oz) * Math.PI / 180);
+        let offset = sStep * 0.8;
+        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, sStep - offset, 0);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].transformMat4(step, step, rotMat);
         this.currTurtle.prevDepth = this.currTurtle.depth;
         this.currTurtle.depth += frac; //Math.max(0.2, Math.min(1.0 / (sF * 14), 0.7));
-        this.currTurtle.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.currTurtle.prevPosition, this.currTurtle.position); //Math.max(0.2, Math.min(1.0 / (sF * 14), 0.7));
-        this.currTurtle.prevOrientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].copy(this.currTurtle.prevOrientation, this.currTurtle.orientation); //Math.max(0.2, Math.min(1.0 / (sF * 14), 0.7));
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
+        this.currTurtle.prevPosition = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.currTurtle.prevPosition, this.currTurtle.position); //Math.max(0.2, Math.min(1.0 / (sF * 14), 0.7));
+        this.currTurtle.prevOrientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].copy(this.currTurtle.prevOrientation, this.currTurtle.orientation); //Math.max(0.2, Math.min(1.0 / (sF * 14), 0.7));
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
     }
     advanceTurtleOld(frac) {
         //let sF = Math.max(this.radius - Math.exp(0.7 * this.currTurtle.depth * this.decay), 0.01);
@@ -23944,26 +24026,47 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
         //sF = Math.max(this.radius - this.currTurtle.depth * this.decay, 0.01);
         let sStep = Math.exp(-this.currTurtle.depth * this.stepDecay) * this.height;
         //sStep = Math.min(sStep, 1);
-        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/stem.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(sF, sStep, sF), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(0.29, 0.17, 0.11, 1));
-        this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh.transform, mesh.m_color);
+        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/stem.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(sF, sStep, sF), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(0.29, 0.17, 0.11, 1));
+        this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh);
         let rotMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateY(rotMat, rotMat, this.currTurtle.orientation[1] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(rotMat, rotMat, this.currTurtle.orientation[2] * Math.PI / 180);
         let offset = this.height / 15;
-        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, sStep - offset, 0);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].transformMat4(step, step, rotMat);
+        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, sStep - offset, 0);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].transformMat4(step, step, rotMat);
         this.currTurtle.depth += frac;
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
     }
     sproutBud() {
-        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/petal.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(this.orchidSize, this.orchidSize, this.orchidSize), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(1, 1, 1, 1));
-        this.fullMesh.transformAndAppend(this.meshNames.get("petal"), mesh.transform, mesh.m_color);
+        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/petal.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.prevPosition), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.orchidSize * 1.5, this.orchidSize, this.orchidSize), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(1, 1, 1, 1));
+        let stoch = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].random(stoch);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].scale(stoch, stoch, 20);
+        mesh.rotate[0] = this.currTurtle.prevOrientation[0] + stoch[0];
+        mesh.rotate[1] = 0;
+        mesh.rotate[2] = this.currTurtle.prevOrientation[2] + stoch[2] + 90;
+        let randOff = Math.random() * 3 - 2;
+        randOff = Math.min(randOff, 0);
+        mesh.scale[0] = this.leaf_size * (Math.random() + 2.0);
+        mesh.scale[2] = this.leaf_size * (Math.random() + 1.2);
+        mesh.uv_cell = 2;
+        let rotMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
+        let ox = (Math.random() - 0.5) * 360;
+        let oz = 90;
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(rotMat, rotMat, ox + this.currTurtle.prevOrientation[0] * Math.PI / 180);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateY(rotMat, rotMat, this.currTurtle.prevOrientation[1] * Math.PI / 180);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(rotMat, rotMat, oz + this.currTurtle.prevOrientation[2] * Math.PI / 180);
+        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 1, 0);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].transformMat4(step, step, rotMat);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].scaleAndAdd(mesh.center, mesh.center, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(step[0], step[1], step[2], 0), 0);
+        mesh.getOverallTransformation();
+        this.fullMesh.transformAndAppend(this.meshNames.get("plane"), mesh);
     }
     sproutLeaf() {
         let sF = Math.exp(-this.currTurtle.depth);
-        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/leaf.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(sF, 1, sF), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(0.38, 0.51, 0.33, 1));
-        this.fullMesh.transformAndAppend(this.meshNames.get("orchid"), mesh.transform, mesh.m_color);
+        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/leaf.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(sF, 1, sF), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.orientation), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(0.38, 0.51, 0.33, 1));
+        this.fullMesh.transformAndAppend(this.meshNames.get("plane"), mesh);
     }
     addTurtleDepth(d) {
         this.currTurtle.depth += d;
@@ -23978,12 +24081,14 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
         this.currTurtle.orientation[2] += 30;
     }
     setAxiom() {
-        this.axiom = 'TX';
+        this.axiom = 'AAAAAAAAAXY';
     }
     fillCharExpansions() {
         console.log("orchids EXPANSION");
-        this.charExpansions.set('X', '[d3<<A<<A[3dFs]<<<X>>++[3dFs]]AA[d1F+F-->F-+F-F[2dFFs]--A--X-->>[2dFs]]>FFF[d4F-FF[1Fs]<F-F++++X--<<[1dFFs]]');
-        //this.charExpansions.set('G', '[BG][BG]');
+        this.charExpansions.set('X', '[ddd>>AsAsX]AA[+ddd<<<AsAsX]A[ddd---AsAsX]AAAs');
+        this.charExpansions.set('Y', '[dd+dAsAsX][ddd-dAsAsX][dd>>dAsAsX]');
+        this.charExpansions.set('T', 'AA[>>>>>>>AAAT]T');
+        this.charExpansions.set('G', 'A[<<<<<<<<<<<<A]');
         // this.charExpansions.set('F', 'F');
         //this.charExpansions.set('A', '-B>');
         //this.charExpansions.set('B', '<F');
@@ -23992,7 +24097,7 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
         //this.charExpansions.set('+', '+F');
         //this.charExpansions.set('-', '-F');
         //this.charExpansions.set('Y', '[yylyyyylyyy>>>ylY]');
-        this.charExpansions.set('T', 'A<<A<<A--A>A+++A>A<A++A--');
+        //this.charExpansions.set('T', 'F<<<<++F--');
     }
     pushTurtle() {
         this.turtleStack.push(this.currTurtle);
@@ -24030,7 +24135,7 @@ class Orchids extends __WEBPACK_IMPORTED_MODULE_2__LSystem__["a" /* default */] 
     }
 }
 ;
-/* harmony default export */ __webpack_exports__["a"] = (Orchids);
+/* harmony default export */ __webpack_exports__["a"] = (Foliage);
 
 
 /***/ }),
@@ -24056,12 +24161,13 @@ class LSystem {
         this.charToAction = new Map();
         this.expandedSentence = "";
         this.currTurtle = new __WEBPACK_IMPORTED_MODULE_2__Turtle__["a" /* default */]();
-        this.currTurtle.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 1, 0);
+        this.currTurtle.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 1, 0);
         this.orientRand = 0;
         this.fillCharExpansions();
         this.fillCharToAction();
         this.curvature = 5;
         this.height = 0.2;
+        this.leaf_size = 1;
         this.smoothshading = true;
     }
     fillMeshNames() {
@@ -24071,19 +24177,14 @@ class LSystem {
             'stem': './geo/stem.obj',
             'leaf': './geo/leaf.obj',
             'petal': './geo/petal.obj',
+            'plane': './geo/plane.obj',
         }, (meshes) => {
-            let orchid = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('./geo/orchid.obj');
-            orchid.loadMesh(meshes.orchid);
-            let stem = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('./geo/stem.obj');
-            stem.loadMesh(meshes.stem);
-            let leaf = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('./geo/leaf.obj');
-            leaf.loadMesh(meshes.leaf);
-            let petal = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('./geo/petal.obj');
-            petal.loadMesh(meshes.petal);
-            this.meshNames.set("orchid", orchid);
-            this.meshNames.set("stem", stem);
-            this.meshNames.set("leaf", leaf);
-            this.meshNames.set("petal", petal);
+            for (let item in meshes) {
+                //console.log("Item" + item.toString());
+                let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/cube.obj');
+                mesh.loadMesh(meshes[item]);
+                this.meshNames.set(item.toString(), mesh);
+            }
             //this.loadMesh(meshes.mesh);
             this.expandAxiom();
             this.moveTurtle();
@@ -24116,16 +24217,16 @@ class LSystem {
         });
     }
     advanceTurtle() {
-        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/feather.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1, 1, 1), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(this.currTurtle.orientation));
-        this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh.transform, mesh.m_color);
+        let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/feather.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.position), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(1, 1, 1), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(this.currTurtle.orientation));
+        this.fullMesh.transformAndAppend(this.meshNames.get("stem"), mesh);
         let rotMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(rotMat, rotMat, this.currTurtle.orientation[0] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateY(rotMat, rotMat, this.currTurtle.orientation[1] * Math.PI / 180);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(rotMat, rotMat, this.currTurtle.orientation[2] * Math.PI / 180);
-        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 1, 0);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].transformMat4(step, step, rotMat);
+        let step = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 1, 0);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].transformMat4(step, step, rotMat);
         //vec3.scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, this.currTurtle.depth);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].scaleAndAdd(this.currTurtle.position, this.currTurtle.position, step, 1);
     }
     rotateTurtleX() {
         this.currTurtle.orientation[0] += 30;
@@ -24186,6 +24287,8 @@ class LSystem {
     createAll() {
         //console.log("creating all");
         this.fullMesh.create();
+        // console.log("MESH UVS " + this.fullMesh.uvs)
+        //console.log("MESH UVS " + this.fullMesh.positions)
         //console.log(this.fullMesh);
     }
 }
@@ -24216,27 +24319,29 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
         this.face_rotates = new Array(2);
         this.positions = new Array();
         this.normals = new Array();
+        this.uvs = new Array();
         this.colors = new Array();
         this.indices = new Array();
         this.enabled = true;
         this.smoothshade = true;
         this.maxIdx = -1;
+        this.subdivs = 12;
     }
     assignFaceCenters(f1, f2) {
-        this.face_centers[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(f1);
-        this.face_centers[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].clone(f2);
+        this.face_centers[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(f1);
+        this.face_centers[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].clone(f2);
     }
     assignFaceRotations(f1, f2) {
-        this.face_rotates[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(f1[0], 0, f1[2]);
-        this.face_rotates[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(f2[0], 0, f2[2]);
+        this.face_rotates[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(f1[0], 0, f1[2]);
+        this.face_rotates[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(f2[0], 0, f2[2]);
     }
     assignFaceScales(f1, f2) {
         this.face_scales[0] = f1;
         this.face_scales[1] = f2;
     }
     assignFaceScaleUniform(f1, f2) {
-        this.face_scales[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(f1, 1, f1);
-        this.face_scales[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(f2, 1, f2);
+        this.face_scales[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(f1, 1, f1);
+        this.face_scales[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(f2, 1, f2);
     }
     loadMesh() {
         //console.log("loading cylinder")
@@ -24244,10 +24349,11 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
         this.positions = new Array();
         this.normals = new Array();
         this.colors = new Array();
-        let subdivs = 20;
+        let subdivs = this.subdivs;
         let pos = new Array();
         let nor = new Array();
         let col = new Array();
+        let uv = new Array();
         let r = Math.random();
         let g = Math.random();
         let b = Math.random();
@@ -24255,17 +24361,18 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
         for (let face = 0; face < 2; face++) {
             for (let i = 0; i < subdivs; i++) {
                 let transMat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].translate(transMat, transMat, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(this.face_centers[face][0], this.face_centers[face][1], this.face_centers[face][2]));
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].translate(transMat, transMat, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.face_centers[face][0], this.face_centers[face][1], this.face_centers[face][2]));
                 __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateX(transMat, transMat, this.face_rotates[face][0] * Math.PI / 180);
                 __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].rotateZ(transMat, transMat, this.face_rotates[face][2] * Math.PI / 180);
                 __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].scale(transMat, transMat, this.face_scales[face]);
                 let rad = 2 * i / subdivs * Math.PI;
-                let norm = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(0, 1, 0, 0);
-                let p1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(Math.sin(rad), 0, Math.cos(rad), 1);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].transformMat4(p1, p1, transMat);
+                let norm = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(0, 1, 0, 0);
+                let p1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(Math.sin(rad), 0, Math.cos(rad), 1);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].transformMat4(p1, p1, transMat);
                 pos.push(p1);
                 nor.push(norm);
                 col.push(this.m_color);
+                uv.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(0, 0));
             }
         }
         //fan method for faces
@@ -24276,6 +24383,7 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
                 this.indices.push(i + 1 + subdivs * face);
             }
         }
+        //hull
         let initIdx = 2 * subdivs;
         for (let i = 0; i < subdivs; i++) {
             let fIdx = new Array(4);
@@ -24283,18 +24391,30 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
             fIdx[1] = (i + 1) % subdivs;
             fIdx[2] = (i + 1) % subdivs + subdivs;
             fIdx[3] = i + subdivs;
-            let debugCol = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(i / (subdivs + 1), i / (subdivs + 1), i / (subdivs + 1), 1);
+            let uvmin = (i) / subdivs;
+            let uvmax = (i + 1) / subdivs;
+            let faceuvs = new Array(4);
+            faceuvs[0] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(uvmin, 0);
+            faceuvs[1] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(uvmax, 0);
+            faceuvs[2] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(uvmax, 1);
+            faceuvs[3] = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(uvmin, 1);
+            let debugCol = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(i / (subdivs + 1), i / (subdivs + 1), i / (subdivs + 1), 1);
             for (let v = 0; v < 4; v++) {
-                let e1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].create();
-                let e2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].create();
-                let norm = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].subtract(e1, pos[fIdx[(v + 1) % 4]], pos[fIdx[v]]);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].subtract(e2, pos[fIdx[(v + 2) % 4]], pos[fIdx[(v + 1) % 4]]);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].cross(norm, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(e1[0], e1[1], e1[2]), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(e2[0], e2[1], e2[2]));
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].normalize(norm, norm);
+                let e1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].create();
+                let e2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].create();
+                let norm = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].subtract(e1, pos[fIdx[(v + 1) % 4]], pos[fIdx[v]]);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].subtract(e2, pos[fIdx[(v + 2) % 4]], pos[fIdx[(v + 1) % 4]]);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].cross(norm, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(e1[0], e1[1], e1[2]), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(e2[0], e2[1], e2[2]));
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].normalize(norm, norm);
                 pos.push(pos[fIdx[v]]);
-                nor.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(norm[0], norm[1], norm[2], 0));
+                nor.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(norm[0], norm[1], norm[2], 0));
                 col.push(this.m_color);
+                //(0,0)
+                //(1,0)
+                //(1,1)
+                //(0,1)
+                uv.push(faceuvs[v]);
                 //debugCol = vec4.fromValues(v / 4, v % 2,0, 1);
                 //debugCol = vec4.fromValues(norm[0], norm[1], norm[2], 1);
                 //col.push(debugCol);
@@ -24312,20 +24432,20 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
             let prevNor = nor[nor.length - 1];
             let firstNor = nor[start];
             for (let i = start; i < 6 * subdivs; i += 4) {
-                let currNor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].clone(nor[i]);
-                let nextNor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].create();
+                let currNor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].clone(nor[i]);
+                let nextNor = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].create();
                 if (i < 6 * subdivs - 4) {
                     nextNor = nor[i + 4];
                 }
                 else {
                     nextNor = firstNor;
                 }
-                let avgNorL = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].create();
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].lerp(avgNorL, currNor, prevNor, 0.5);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].normalize(avgNorL, avgNorL);
-                let avgNorR = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].create();
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].lerp(avgNorR, currNor, nextNor, 0.5);
-                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].normalize(avgNorR, avgNorR);
+                let avgNorL = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].create();
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].lerp(avgNorL, currNor, prevNor, 0.5);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].normalize(avgNorL, avgNorL);
+                let avgNorR = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].create();
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].lerp(avgNorR, currNor, nextNor, 0.5);
+                __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].normalize(avgNorR, avgNorR);
                 nor[i] = avgNorL;
                 nor[i + 1] = avgNorR;
                 nor[i + 2] = avgNorR;
@@ -24338,6 +24458,9 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
                 this.positions.push(pos[i][j]);
                 this.normals.push(nor[i][j]);
                 this.colors.push(col[i][j]);
+                if (j < 2) {
+                    this.uvs.push(uv[i][j]);
+                }
             }
         }
         /*
@@ -24351,11 +24474,13 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
             let norm = Float32Array.from(this.normals);
             let pos = Float32Array.from(this.positions);
             let col = Float32Array.from(this.colors);
+            let uv = Float32Array.from(this.uvs);
             let idx = Uint32Array.from(this.indices);
             this.generateIdx();
             this.generatePos();
             this.generateNor();
             this.generateCol();
+            this.generateUV();
             this.count = this.indices.length;
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.bufIdx);
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, idx, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
@@ -24365,9 +24490,8 @@ class Cylinder extends __WEBPACK_IMPORTED_MODULE_2__Mesh__["a" /* default */] {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, pos, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.bufCol);
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, col, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
-            //console.log("COUNT " + this.count);
-            //console.log(this.positions);
-            //console.log(this.indices);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.bufUV);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, uv, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
         }
     }
 }
@@ -24388,7 +24512,7 @@ var ObjMtlLoader = __webpack_require__(15);
 var OBJ = __webpack_require__(6);
 var fs = __webpack_require__(20);
 class ParticleMeshes extends __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */] {
-    constructor(filepath, center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(1, 1, 1), rotate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(25, 86, 107, 255)) {
+    constructor(filepath, center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(1, 1, 1), rotate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), col = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(25, 86, 107, 255)) {
         super(filepath); // Call the constructor of the super class. This is required.
         this.xSubs = 5;
         this.ySubs = 3;
@@ -24399,17 +24523,17 @@ class ParticleMeshes extends __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default 
         this.particles = new Array();
         this.spread = 2;
         this.m_particle_size = 1;
-        this.system_center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
+        this.system_center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
     }
     loadParticleMeshes() {
         this.particles = new Array();
         for (let x = 0; x < this.xSubs; x++) {
             for (let y = 0; y < this.ySubs; y++) {
                 for (let z = 0; z < this.zSubs; z++) {
-                    let mesh = new __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default */]('/geo/orchid.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0.3, 0.3, 0.3), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec4 */].fromValues(1, 1, 1, 1));
+                    let mesh = new ParticleMeshes('/geo/orchid.obj', __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0.3, 0.3, 0.3), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(1, 1, 1, 1));
                     this.refreshParticleAt(mesh, x, y, z);
                     mesh.m_angle = Math.random() * 180;
-                    mesh.m_size = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(this.m_particle_size, this.m_particle_size, this.m_particle_size);
+                    mesh.m_size = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(this.m_particle_size, this.m_particle_size, this.m_particle_size);
                     mesh.fromPrefabMesh(this.m_particle);
                     this.particles.push(mesh);
                     mesh.loadAndCreate();
@@ -24422,9 +24546,9 @@ class ParticleMeshes extends __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default 
         let randX = (x + Math.random()) * this.spread;
         let randY = (y + Math.random()) * this.spread;
         let randZ = (z + Math.random() - this.zSubs / 2) * this.spread;
-        mesh.m_pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(-randX, randY, randZ);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].add(mesh.m_pos, mesh.m_pos, this.system_center);
-        mesh.m_vel = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(2, 0, 0);
+        mesh.m_pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(-randX, randY, randZ);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(mesh.m_pos, mesh.m_pos, this.system_center);
+        mesh.m_vel = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(2, 0, 0);
     }
     advanceParticles() {
         if (this.loaded) {
@@ -24434,12 +24558,11 @@ class ParticleMeshes extends __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default 
                         let i = x * this.ySubs * this.zSubs + y * this.zSubs + z;
                         // console.log(i);
                         let mesh = this.particles[i];
-                        console.log("mesh " + mesh);
-                        let dx = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].create();
-                        let dx2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].fromValues(0, -1 * this.time_scale, 0);
-                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].scale(dx, mesh.m_vel, this.time_scale);
-                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].add(mesh.m_pos, mesh.m_pos, dx);
-                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec3 */].add(mesh.m_vel, mesh.m_vel, dx2);
+                        let dx = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].create();
+                        let dx2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, -1 * this.time_scale, 0);
+                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].scale(dx, mesh.m_vel, this.time_scale);
+                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(mesh.m_pos, mesh.m_pos, dx);
+                        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].add(mesh.m_vel, mesh.m_vel, dx2);
                         let r = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].create();
                         r = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].identity(r);
                         if (mesh.m_pos[1] < -2.0 + this.system_center[1]) {
@@ -24472,13 +24595,13 @@ class ParticleMeshes extends __WEBPACK_IMPORTED_MODULE_1__Mesh__["a" /* default 
 /* 116 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\n\n//This is a vertex shader. While it is called a \"shader\" due to outdated conventions, this file\n//is used to apply matrix transformations to the arrays of vertex data passed to it.\n//Since this code is run on your GPU, each vertex is transformed simultaneously.\n//If it were run on your CPU, each vertex would have to be processed in a FOR loop, one at a time.\n//This simultaneous transformation allows your program to run much faster, especially when rendering\n//geometry with millions of vertices.\n\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\n                            // object we're rendering. In this assignment,\n                            // this will be the result of traversing your scene graph.\n\nuniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\n                            // This allows us to transform the object's normals properly\n                            // if the object has been non-uniformly scaled.\n\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\n                            // We've written a static matrix for you to use for HW2,\n                            // but in HW3 you'll have to generate one yourself\n\nin vec4 vs_Pos;             // The array of vertex positions passed to the shader\n\nin vec4 vs_Nor;             // The array of vertex normals passed to the shader\n\nin vec4 vs_Col;             // The array of vertex colors passed to the shader.\n\nout vec4 fs_Nor;            // The array of normals that has been transformed by u_ModelInvTr. This is implicitly passed to the fragment shader.\nout vec4 fs_LightVec;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.\nout vec4 fs_Col;            // The color of each vertex. This is implicitly passed to the fragment shader.\n\nconst vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of\n                                        //the geometry in the fragment shader.\n\nvoid main()\n{\n    fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation\n\n    mat3 invTranspose = mat3(u_ModelInvTr);\n    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.\n                                                            // Transform the geometry's normals by the inverse transpose of the\n                                                            // model matrix. This is necessary to ensure the normals remain\n                                                            // perpendicular to the surface after the surface is transformed by\n                                                            // the model matrix.\n\n\n    vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below\n\n    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies\n\n    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is\n                                             // used to render the final positions of the geometry's vertices\n}\n"
+module.exports = "#version 300 es\n\n//This is a vertex shader. While it is called a \"shader\" due to outdated conventions, this file\n//is used to apply matrix transformations to the arrays of vertex data passed to it.\n//Since this code is run on your GPU, each vertex is transformed simultaneously.\n//If it were run on your CPU, each vertex would have to be processed in a FOR loop, one at a time.\n//This simultaneous transformation allows your program to run much faster, especially when rendering\n//geometry with millions of vertices.\n\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\n                            // object we're rendering. In this assignment,\n                            // this will be the result of traversing your scene graph.\n\nuniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\n                            // This allows us to transform the object's normals properly\n                            // if the object has been non-uniformly scaled.\n\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\n                            // We've written a static matrix for you to use for HW2,\n                            // but in HW3 you'll have to generate one yourself\n\nin vec4 vs_Pos;             // The array of vertex positions passed to the shader\n\nin vec4 vs_Nor;             // The array of vertex normals passed to the shader\n\nin vec4 vs_Col;             // The array of vertex colors passed to the shader.\nin vec2 vs_UV;             // The array of vertex colors passed to the shader.\n\nout vec4 fs_Nor;            // The array of normals that has been transformed by u_ModelInvTr. This is implicitly passed to the fragment shader.\nout vec4 fs_LightVec;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.\nout vec4 fs_Col;            // The color of each vertex. This is implicitly passed to the fragment shader.\nout vec2 fs_UV;            // The color of each vertex. This is implicitly passed to the fragment shader.\n\nconst vec4 lightPos = vec4(-10, 10, -30, 1); //The position of our virtual light, which is used to compute the shading of\n                                        //the geometry in the fragment shader.\n\nvoid main()\n{\n    fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation\n    fs_UV = vs_UV;\n    mat3 invTranspose = mat3(u_ModelInvTr);\n    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.\n                                                            // Transform the geometry's normals by the inverse transpose of the\n                                                            // model matrix. This is necessary to ensure the normals remain\n                                                            // perpendicular to the surface after the surface is transformed by\n                                                            // the model matrix.\n\n\n    vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below\n\n    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies\n\n    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is\n                                             // used to render the final positions of the geometry's vertices\n}\n"
 
 /***/ }),
 /* 117 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\n\n// This is a fragment shader. If you've opened this file first, please\n// open and read lambert.vert.glsl before reading on.\n// Unlike the vertex shader, the fragment shader actually does compute\n// the shading of geometry. For every pixel in your program's output\n// screen, the fragment shader is run for every bit of geometry that\n// particular pixel overlaps. By implicitly interpolating the position\n// data passed into the fragment shader by the vertex shader, the fragment shader\n// can compute what color to apply to its pixel based on things like vertex\n// position, light position, and vertex color.\nprecision highp float;\n\nuniform vec4 u_Color; // The color with which to render this instance of geometry.\n\n// These are the interpolated values out of the rasterizer, so you can't know\n// their specific values without knowing the vertices that contributed to them\nin vec4 fs_Nor;\nin vec4 fs_LightVec;\nin vec4 fs_Col;\n\nout vec4 out_Col; // This is the final output color that you will see on your\n                  // screen for the pixel that is currently being processed.\n\nvoid main()\n{\n    // Material base color (before shading)\n        vec4 diffuseColor = u_Color;\n\n        // Calculate the diffuse term for Lambert shading\n        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));\n        // Avoid negative lighting values\n        // diffuseTerm = clamp(diffuseTerm, 0, 1);\n\n        float ambientTerm = 0.2;\n\n        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier\n                                                            //to simulate ambient lighting. This ensures that faces that are not\n                                                            //lit by our point light are not completely black.\n\n        // Compute final shaded color\n        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);\n}\n"
+module.exports = "#version 300 es\n\n// This is a fragment shader. If you've opened this file first, please\n// open and read lambert.vert.glsl before reading on.\n// Unlike the vertex shader, the fragment shader actually does compute\n// the shading of geometry. For every pixel in your program's output\n// screen, the fragment shader is run for every bit of geometry that\n// particular pixel overlaps. By implicitly interpolating the position\n// data passed into the fragment shader by the vertex shader, the fragment shader\n// can compute what color to apply to its pixel based on things like vertex\n// position, light position, and vertex color.\nprecision highp float;\n\nuniform vec4 u_Color; // The color with which to render this instance of geometry.\n\n// These are the interpolated values out of the rasterizer, so you can't know\n// their specific values without knowing the vertices that contributed to them\nin vec4 fs_Nor;\nin vec4 fs_LightVec;\nin vec4 fs_Col;\nin vec2 fs_UV;\n\nuniform sampler2D u_Texture;\nout vec4 out_Col; // This is the final output color that you will see on your\n                  // screen for the pixel that is currently being processed.\n\nvoid main()\n{\n    // Material base color (before shading)\n        vec4 diffuseColor = u_Color;\n    \tdiffuseColor = texture(u_Texture, fs_UV);\n\n        if(diffuseColor.a < 0.2)\n            discard;\n\n    \t//diffuseColor = vec4(fs_UV, 1,1);\n\n        // Calculate the diffuse term for Lambert shading\n        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));\n        // Avoid negative lighting values\n        diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);\n\n        float ambientTerm = 0.3;\n\n        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier\n                                                            //to simulate ambient lighting. This ensures that faces that are not\n                                                            //lit by our point light are not completely black.\n\n        // Compute final shaded color\n        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);\n                out_Col = vec4(diffuseColor.rgb * lightIntensity, 1);\n                //out_Col = vec4(fs_UV, 0,1);\n\n       // out_Col = vec4(normalize(fs_Nor.xyz), 1);\n\n}\n"
 
 /***/ }),
 /* 118 */
